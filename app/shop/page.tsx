@@ -12,6 +12,7 @@ export default function ShopPage() {
   const [xp, setXp] = useState(0);
   const [loading, setLoading] = useState(true);
   const [buyModal, setBuyModal] = useState<any>(null);
+  const [contactInfo, setContactInfo] = useState("");
   const [toast, setToast] = useState<{ msg: string; type: "success" | "warn" } | null>(null);
 
   const supabase = createClient();
@@ -53,9 +54,24 @@ export default function ShopPage() {
       return;
     }
 
+    if (!contactInfo.trim()) {
+      showToast("쿠폰을 수신할 연락처/이메일을 입력해주세요.", "warn");
+      return;
+    }
+
     const newPoints = points - buyModal.price;
     // XP는 차감하지 않고 그대로 유지!
     await supabase.from("profiles").update({ points: newPoints }).eq("id", user.id);
+    
+    // shop_orders에 삽입
+    await supabase.from("shop_orders").insert({
+      user_id: user.id,
+      item_id: buyModal.id,
+      item_name: buyModal.name,
+      price: buyModal.price,
+      contact_info: contactInfo,
+      status: "pending"
+    });
     await supabase.from("point_transactions").insert({
       user_id: user.id,
       amount: -buyModal.price,
@@ -65,7 +81,8 @@ export default function ShopPage() {
 
     setPoints(newPoints);
     setBuyModal(null);
-    showToast(`✅ ${buyModal.name} 교환이 완료되었습니다. (내 정보에서 바코드 확인)`, "success");
+    setContactInfo("");
+    showToast(`✅ ${buyModal.name} 교환이 신청되었습니다. (관리자 확인 후 발송)`, "success");
   };
 
   if (!user && !loading) {
@@ -80,15 +97,14 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="animated-bg" style={{ minHeight: "100vh", paddingBottom: 80 }}>
+    <div style={{ minHeight: "100vh", paddingBottom: 80, background: "var(--bg-primary)" }}>
       {user && <Navbar points={points} xp={xp} streak={12} />}
       
       <main style={{ maxWidth: 1000, margin: "0 auto", padding: "100px 20px 40px" }}>
         
         {/* Header */}
         <section style={{ textAlign: "center", marginBottom: 40 }}>
-          <ShoppingBag size={48} color="var(--purple-primary)" style={{ marginBottom: 16 }} />
-          <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 12, letterSpacing: "-0.02em" }}>포인트 상점</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 12, letterSpacing: "-0.02em", color: "var(--text-primary)" }}>포인트 상점</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: 16, lineHeight: 1.6 }}>
             예측 성공과 미션을 통해 모은 포인트로<br/>진짜 현실의 아이템을 교환하세요!
           </p>
@@ -97,8 +113,8 @@ export default function ShopPage() {
         {/* User Balance */}
         {user && (
           <div style={{
-            background: "rgba(139,92,246,0.1)", border: "1px solid var(--purple-primary)",
-            borderRadius: 16, padding: "24px 32px", display: "flex", justifyContent: "space-between", alignItems: "center",
+            background: "var(--bg-card)", border: "1px solid var(--border)",
+            borderRadius: 8, padding: "24px 32px", display: "flex", justifyContent: "space-between", alignItems: "center",
             marginBottom: 40, flexWrap: "wrap", gap: 16
           }}>
             <div>
@@ -136,14 +152,13 @@ export default function ShopPage() {
                 <button 
                   onClick={() => setBuyModal(item)}
                   style={{
-                    width: "100%", padding: "14px", borderRadius: 10, border: "none",
-                    background: "var(--bg-primary)", color: "var(--text-primary)", borderTop: "1px solid var(--border)",
-                    fontWeight: 800, fontSize: 16, cursor: "pointer", transition: "all 0.2s",
-                    display: "flex", justifyContent: "center", alignItems: "center", gap: 8,
-                    boxShadow: "inset 0 0 0 1px var(--purple-primary)"
+                    width: "100%", padding: "14px", borderRadius: 6, border: "1px solid var(--border)",
+                    background: "var(--bg-card-hover)", color: "var(--text-primary)",
+                    fontWeight: 800, fontSize: 16, cursor: "pointer", transition: "all 0.1s",
+                    display: "flex", justifyContent: "center", alignItems: "center", gap: 8
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = "var(--purple-primary)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary)"}
+                  onMouseEnter={e => { e.currentTarget.style.background = "var(--purple-primary)"; e.currentTarget.style.color = "white"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-card-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
                 >
                   {formatPoints(item.price)} 교환
                 </button>
@@ -167,15 +182,16 @@ export default function ShopPage() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
               style={{
                 position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-                zIndex: 201, width: "90%", maxWidth: 400, background: "#14142a",
-                border: "1px solid rgba(139,92,246,0.3)", borderRadius: 20, padding: 32, textAlign: "center"
+                zIndex: 201, width: "90%", maxWidth: 400, background: "var(--bg-card)",
+                border: "1px solid var(--border)", borderRadius: 12, padding: 32, textAlign: "center",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.1)"
               }}
             >
               <div style={{ marginBottom: 24 }}>{buyModal.icon}</div>
-              <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>{buyModal.name}</h3>
+              <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, color: "var(--text-primary)" }}>{buyModal.name}</h3>
               <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>정말로 해당 상품을 구매하시겠습니까?</p>
               
-              <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 12, padding: "16px", marginBottom: 24, textAlign: "left" }}>
+              <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: "16px", marginBottom: 16, textAlign: "left" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
                   <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>보유 포인트</span>
                   <span style={{ fontWeight: 700 }}>{formatPoints(points)}</span>
@@ -186,22 +202,36 @@ export default function ShopPage() {
                 </div>
                 <div style={{ height: 1, background: "var(--border)", margin: "12px 0" }} />
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--purple-primary)", fontSize: 15, fontWeight: 700 }}>결제 후 잔액</span>
-                  <span style={{ fontWeight: 800, fontSize: 16 }}>{formatPoints(points - buyModal.price)}</span>
+                  <span style={{ color: "var(--text-primary)", fontSize: 15, fontWeight: 700 }}>결제 후 잔액</span>
+                  <span style={{ fontWeight: 800, fontSize: 16, color: "var(--text-primary)" }}>{formatPoints(points - buyModal.price)}</span>
                 </div>
+              </div>
+
+              <div style={{ marginBottom: 24, textAlign: "left" }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>수신 연락처 (전화번호 또는 카카오톡 등록 이메일)</label>
+                <input 
+                  type="text" 
+                  value={contactInfo}
+                  onChange={(e) => setContactInfo(e.target.value)}
+                  placeholder="예: 010-1234-5678"
+                  style={{
+                    width: "100%", padding: "12px", borderRadius: 8, border: "1px solid var(--border)",
+                    fontSize: 15, background: "var(--bg-secondary)", color: "var(--text-primary)", outline: "none"
+                  }}
+                />
               </div>
 
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   onClick={() => setBuyModal(null)}
-                  style={{ flex: 1, padding: "14px", borderRadius: 12, background: "var(--bg-card-hover)", border: "1px solid var(--border)", color: "var(--text-secondary)", fontSize: 15, fontWeight: 700, cursor: "pointer" }}
+                  style={{ flex: 1, padding: "14px", borderRadius: 8, background: "var(--bg-card-hover)", border: "1px solid var(--border)", color: "var(--text-secondary)", fontSize: 15, fontWeight: 700, cursor: "pointer" }}
                 >취소</button>
                 <motion.button
                   onClick={handleBuy}
                   whileTap={{ scale: 0.97 }}
-                  style={{ flex: 1, padding: "14px", borderRadius: 12, background: "var(--purple-primary)", border: "none", color: "white", fontSize: 15, fontWeight: 800, cursor: "pointer" }}
+                  style={{ flex: 1, padding: "14px", borderRadius: 8, background: "var(--purple-primary)", border: "none", color: "white", fontSize: 15, fontWeight: 800, cursor: "pointer" }}
                 >
-                  결제하기
+                  교환 신청
                 </motion.button>
               </div>
             </motion.div>

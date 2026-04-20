@@ -45,13 +45,6 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
       transition={{ delay: index * 0.06, duration: 0.4 }}
       style={{ padding: 20, position: "relative", overflow: "hidden" }}
     >
-      {/* Ambient glow behind card */}
-      <div style={{
-        position: "absolute", top: -40, right: -40,
-        width: 120, height: 120, borderRadius: "50%",
-        background: `${catColor}10`, pointerEvents: "none"
-      }} />
-
       {/* Header badges */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <span className={`tag tag-${market.category}`}>
@@ -66,8 +59,8 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
         )}
         {market.new && (
           <span style={{
-            background: "rgba(34,211,160,0.15)", color: "#22d3a0",
-            border: "1px solid rgba(34,211,160,0.3)",
+            background: "rgba(46,115,248,0.1)", color: "var(--accent-yes)",
+            border: "1px solid rgba(46,115,248,0.2)",
             borderRadius: 100, padding: "3px 8px", fontSize: 11, fontWeight: 700
           }}>✨ NEW</span>
         )}
@@ -96,10 +89,10 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
       {/* Probability Bar */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-          <span style={{ color: "#22d3a0", fontWeight: 800, fontSize: 22 }}>
+          <span style={{ color: "var(--accent-yes)", fontWeight: 800, fontSize: 22 }}>
             {market.yesProb}<span style={{ fontSize: 13 }}>%</span>
           </span>
-          <span style={{ color: "#f43f5e", fontWeight: 800, fontSize: 22 }}>
+          <span style={{ color: "var(--accent-no)", fontWeight: 800, fontSize: 22 }}>
             {market.noProb}<span style={{ fontSize: 13 }}>%</span>
           </span>
         </div>
@@ -139,8 +132,8 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
       {market.myBet ? (
         <div style={{
           padding: "12px",
-          background: market.myBet === "yes" ? "rgba(34,211,160,0.05)" : "rgba(244,63,94,0.05)",
-          borderRadius: 8, border: `1px solid ${market.myBet === "yes" ? "var(--accent-yes)" : "var(--accent-no)"}`,
+          background: "var(--bg-secondary)",
+          borderRadius: 6, border: `1px solid ${market.myBet === "yes" ? "var(--accent-yes)" : "var(--accent-no)"}`,
           display: "flex", flexDirection: "column", gap: 6
         }}>
           <div style={{ color: market.myBet === "yes" ? "var(--accent-yes)" : "var(--accent-no)", fontWeight: 700, fontSize: 13, textAlign: "center" }}>
@@ -178,9 +171,9 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
         whileTap={{ scale: 0.97 }}
         style={{
           width: "100%", marginTop: 8,
-          background: "transparent",
+          background: "var(--bg-card-hover)",
           border: "1px solid var(--border)",
-          borderRadius: 10, padding: "8px",
+          borderRadius: 6, padding: "8px",
           color: "var(--text-secondary)", fontSize: 12, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
           transition: "all 0.2s"

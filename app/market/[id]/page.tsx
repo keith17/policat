@@ -1,13 +1,13 @@
 "use client";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { markets, formatPoints, formatDate } from "@/lib/data";
+import { useParams, useRouter } from "next/navigation";
+import { formatPoints, formatDate } from "@/lib/data";
 import { AdBanner } from "@/components/AdBanner";
 import Navbar from "@/components/Navbar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import Image from "next/image";
+import { createClient } from "@/utils/supabase/client";
 
 // Mock chart data
 const generateChartData = (finalYes: number) => {
@@ -35,16 +35,64 @@ const comments = [
 export default function MarketDetailPage() {
   const params = useParams();
   const marketId = params.id as string;
-  const market = markets.find(m => m.id === marketId);
-  const [userPoints] = useState(500);
+  const router = useRouter();
+  
+  const [market, setMarket] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userBet, setUserBet] = useState<any>(null);
+  
   const [betSide, setBetSide] = useState<"yes" | "no" | null>(null);
   const [betAmount, setBetAmount] = useState(50);
-  const [participated, setParticipated] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function loadData() {
+      // Load user
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      
+      if (user) {
+        const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+        setUserProfile(profile);
+        
+        const { data: bets } = await supabase.from("bets").select("*").eq("user_id", user.id).eq("market_id", marketId);
+        if (bets && bets.length > 0) {
+          setUserBet(bets[0]);
+        }
+      }
+
+      // Load market
+      const { data: mData } = await supabase.from("markets").select("*").eq("id", marketId).single();
+      if (mData) {
+        const total = mData.yes_pool + mData.no_pool;
+        const yesProb = total > 0 ? Math.round((mData.yes_pool / total) * 100) : 50;
+        const noProb = total > 0 ? 100 - yesProb : 50;
+        
+        setMarket({
+          ...mData,
+          categoryLabel: mData.category === 'economy' ? '경제' : mData.category === 'politics' ? '정치' : mData.category === 'society' ? '사회' : '스포츠',
+          emoji: mData.category === 'economy' ? '📈' : mData.category === 'politics' ? '🏛️' : mData.category === 'society' ? '🤝' : '⚽',
+          yesProb, noProb, totalVolume: total,
+          daysLeft: Math.max(0, 7 - Math.floor((new Date().getTime() - new Date(mData.created_at).getTime()) / (1000 * 60 * 60 * 24))),
+          endDate: mData.created_at
+        });
+      }
+      setLoading(false);
+    }
+    loadData();
+  }, [marketId, supabase]);
+
+  if (loading) {
+    return <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }} />;
+  }
 
   if (!market) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "#9090b0" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "var(--text-secondary)", background: "var(--bg-primary)" }}>
         마켓을 찾을 수 없습니다.
       </div>
     );
@@ -57,9 +105,37 @@ export default function MarketDetailPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const confirmBet = () => {
-    if (!betSide) return;
-    setParticipated(true);
+  const confirmBet = async () => {
+    if (!betSide || !user || !userProfile) {
+      showToast("로그인이 필요합니다.");
+      return;
+    }
+    if (userProfile.points < betAmount) {
+      showToast("포인트가 부족합니다.");
+      return;
+    }
+
+    const newPoints = userProfile.points - betAmount;
+    
+    // Update local state immediately for UX
+    setUserProfile({ ...userProfile, points: newPoints });
+    setUserBet({ side: betSide, amount: betAmount });
+    
+    // Insert DB records
+    await supabase.from("bets").insert({
+      user_id: user.id,
+      market_id: marketId,
+      side: betSide,
+      amount: betAmount
+    });
+    await supabase.from("profiles").update({ points: newPoints }).eq("id", user.id);
+    await supabase.from("point_transactions").insert({
+      user_id: user.id,
+      amount: -betAmount,
+      type: "bet",
+      description: `예측 참여 (${betSide.toUpperCase()})`
+    });
+
     showToast(`🎯 ${betSide === "yes" ? "YES" : "NO"} ${betAmount}P 예측 참여 완료!`);
   };
 
@@ -69,23 +145,24 @@ export default function MarketDetailPage() {
     showToast("📋 공유 링크가 복사됐습니다! (+3P)");
   };
 
-  const categoryColorMap: Record<string, string> = {
-    economy: "#f59e0b", politics: "#a78bfa", society: "#22d3a0"
-  };
-  const catColor = categoryColorMap[market.category] || "#9090b0";
+  const catColor = market.category === 'economy' ? '#f59e0b' : market.category === 'politics' ? '#a78bfa' : '#22d3a0';
 
   return (
-    <div className="animated-bg" style={{ minHeight: "100vh" }}>
-      <Navbar points={userPoints} streak={3} />
+    <div style={{ minHeight: "100vh", background: "var(--bg-primary)", paddingBottom: 80 }}>
+      {userProfile ? (
+        <Navbar points={userProfile.points} xp={userProfile.xp} streak={userProfile.streak} />
+      ) : (
+        <Navbar points={0} streak={0} />
+      )}
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "90px 20px 60px" }}>
         {/* Breadcrumb */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20, color: "#5a5a7a", fontSize: 13 }}>
-          <Link href="/" style={{ color: "#9090b0", textDecoration: "none" }}>마켓</Link>
-          <span>/</span>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20, color: "var(--text-secondary)", fontSize: 13, fontWeight: 600 }}>
+          <Link href="/" style={{ color: "var(--text-muted)", textDecoration: "none" }}>마켓</Link>
+          <span style={{ color: "var(--border)" }}>/</span>
           <span style={{ color: catColor }}>{market.categoryLabel}</span>
-          <span>/</span>
-          <span>상세</span>
+          <span style={{ color: "var(--border)" }}>/</span>
+          <span style={{ color: "var(--text-primary)" }}>상세</span>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24, alignItems: "start" }}>
@@ -93,69 +170,66 @@ export default function MarketDetailPage() {
           <div>
             {/* Market Header */}
             <motion.div
-              className="glass-card"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              style={{ padding: 28, marginBottom: 20 }}
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 28, marginBottom: 20 }}
             >
               <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                 <span className={`tag tag-${market.category}`}>{market.emoji} {market.categoryLabel}</span>
-                {market.hot && <span style={{ background: "rgba(244,63,94,0.15)", color: "#f43f5e", border: "1px solid rgba(244,63,94,0.3)", borderRadius: 100, padding: "3px 8px", fontSize: 11, fontWeight: 700 }}>🔥 HOT</span>}
               </div>
-              <h1 style={{ fontSize: "clamp(18px, 3vw, 26px)", fontWeight: 800, lineHeight: 1.4, marginBottom: 12 }}>
+              <h1 style={{ fontSize: "clamp(18px, 3vw, 26px)", fontWeight: 800, lineHeight: 1.4, marginBottom: 12, color: "var(--text-primary)" }}>
                 {market.title}
               </h1>
-              <p style={{ color: "#9090b0", fontSize: 14, lineHeight: 1.7, marginBottom: 20 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.7, marginBottom: 20 }}>
                 {market.description}
               </p>
 
               <div style={{
                 display: "flex", gap: 20, flexWrap: "wrap",
-                borderTop: "1px solid rgba(139,92,246,0.1)", paddingTop: 16,
-                color: "#5a5a7a", fontSize: 13
+                borderTop: "1px solid var(--border)", paddingTop: 16,
+                color: "var(--text-secondary)", fontSize: 13, fontWeight: 600
               }}>
-                <span>📅 종료: {formatDate(market.endDate)} ({market.daysLeft}일 남음)</span>
-                <span>👥 {market.participants.toLocaleString()}명 참여</span>
-                <span>💰 총 {(market.totalVolume / 1000).toFixed(0)}K P 베팅</span>
+                <span>📅 기준 30일 ({market.daysLeft}일 남음)</span>
+                <span>👥 {Math.floor(market.totalVolume / 100) + 1}명 참여</span>
+                <span>💰 총 {(market.totalVolume / 1000).toFixed(0)}K P 누적</span>
               </div>
             </motion.div>
 
             {/* Probability + Chart */}
             <motion.div
-              className="glass-card"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              style={{ padding: 24, marginBottom: 20 }}
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 24, marginBottom: 20 }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h2 style={{ fontWeight: 700, fontSize: 16 }}>📈 예측 현황</h2>
-                <span style={{ color: "#5a5a7a", fontSize: 12 }}>30일 추이</span>
+                <h2 style={{ fontWeight: 800, fontSize: 16, color: "var(--text-primary)" }}>📈 예측 현황</h2>
+                <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 700 }}>최근 30일 추이</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
                 <div>
-                  <span style={{ color: "#22d3a0", fontWeight: 900, fontSize: 40 }}>{market.yesProb}</span>
-                  <span style={{ color: "#22d3a0", fontSize: 18 }}>%</span>
-                  <div style={{ color: "#9090b0", fontSize: 12 }}>YES (맞다)</div>
+                  <span style={{ color: "var(--accent-yes)", fontWeight: 900, fontSize: 40 }}>{market.yesProb}</span>
+                  <span style={{ color: "var(--accent-yes)", fontSize: 18 }}>%</span>
+                  <div style={{ color: "var(--text-secondary)", fontSize: 13, fontWeight: 700 }}>YES (맞다)</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <span style={{ color: "#f43f5e", fontWeight: 900, fontSize: 40 }}>{market.noProb}</span>
-                  <span style={{ color: "#f43f5e", fontSize: 18 }}>%</span>
-                  <div style={{ color: "#9090b0", fontSize: 12 }}>NO (아니다)</div>
+                  <span style={{ color: "var(--accent-no)", fontWeight: 900, fontSize: 40 }}>{market.noProb}</span>
+                  <span style={{ color: "var(--accent-no)", fontSize: 18 }}>%</span>
+                  <div style={{ color: "var(--text-secondary)", fontSize: 13, fontWeight: 700 }}>NO (아니다)</div>
                 </div>
               </div>
 
               {/* Prob bar */}
-              <div style={{ display: "flex", gap: 3, height: 12, borderRadius: 6, overflow: "hidden", marginBottom: 24 }}>
+              <div style={{ display: "flex", gap: 4, height: 12, borderRadius: 6, overflow: "hidden", marginBottom: 24 }}>
                 <motion.div
-                  style={{ background: "linear-gradient(90deg, #059669, #22d3a0)" }}
+                  style={{ background: "var(--accent-yes)" }}
                   initial={{ flex: 0 }}
                   animate={{ flex: market.yesProb }}
                   transition={{ duration: 1, ease: "easeOut" }}
                 />
                 <motion.div
-                  style={{ background: "linear-gradient(90deg, #be123c, #f43f5e)" }}
+                  style={{ background: "var(--accent-no)" }}
                   initial={{ flex: 0 }}
                   animate={{ flex: market.noProb }}
                   transition={{ duration: 1, ease: "easeOut" }}
@@ -167,49 +241,47 @@ export default function MarketDetailPage() {
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="yesGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22d3a0" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#22d3a0" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--accent-yes)" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="var(--accent-yes)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="day" tick={{ fill: "#5a5a7a", fontSize: 10 }} tickLine={false} axisLine={false} interval={9} />
-                  <YAxis domain={[0, 100]} tick={{ fill: "#5a5a7a", fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="day" tick={{ fill: "var(--text-muted)", fontSize: 10 }} tickLine={false} axisLine={false} interval={9} />
+                  <YAxis domain={[0, 100]} tick={{ fill: "var(--text-muted)", fontSize: 10 }} tickLine={false} axisLine={false} />
                   <Tooltip
-                    contentStyle={{ background: "#14142a", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 10, color: "#f0f0ff" }}
+                    contentStyle={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)", fontWeight: 700 }}
                     formatter={(val) => [`${val}%`]}
-
                   />
-                  <Area type="monotone" dataKey="yes" stroke="#22d3a0" strokeWidth={2} fill="url(#yesGrad)" dot={false} />
+                  <Area type="monotone" dataKey="yes" stroke="var(--accent-yes)" strokeWidth={2} fill="url(#yesGrad)" dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
             </motion.div>
 
             {/* Comments */}
             <motion.div
-              className="glass-card"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              style={{ padding: 24 }}
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 24 }}
             >
-              <h2 style={{ fontWeight: 700, fontSize: 16, marginBottom: 20 }}>💬 예측 근거 공유</h2>
+              <h2 style={{ fontWeight: 800, fontSize: 16, marginBottom: 20, color: "var(--text-primary)" }}>💬 예측 근거 공유</h2>
               {comments.map((c, i) => (
                 <div key={i} style={{
                   marginBottom: 16, paddingBottom: 16,
-                  borderBottom: i < comments.length - 1 ? "1px solid rgba(139,92,246,0.08)" : "none"
+                  borderBottom: i < comments.length - 1 ? "1px solid var(--border)" : "none"
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontWeight: 700, fontSize: 14 }}>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
                       {c.user}
-                      <span style={{ marginLeft: 6, fontSize: 11, color: catColor, fontWeight: 500 }}>
+                      <span style={{ marginLeft: 6, fontSize: 11, color: catColor, fontWeight: 700 }}>
                         {c.tier === "oracle" ? "👑 오라클" : c.tier === "strategist" ? "🧠 전략가" : "🐣 루키"}
                       </span>
                     </span>
-                    <span style={{ color: "#5a5a7a", fontSize: 12 }}>{c.time}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{c.time}</span>
                   </div>
-                  <p style={{ color: "#c0c0d8", fontSize: 14, lineHeight: 1.6 }}>{c.text}</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.6 }}>{c.text}</p>
                   <button style={{
                     marginTop: 8, background: "none", border: "none",
-                    color: "#5a5a7a", fontSize: 12, cursor: "pointer"
+                    color: "var(--text-muted)", fontSize: 12, cursor: "pointer", fontWeight: 600
                   }}>
                     👍 {c.likes}
                   </button>
@@ -220,9 +292,9 @@ export default function MarketDetailPage() {
                   placeholder="예측 근거를 공유하면 +5P!"
                   rows={3}
                   style={{
-                    width: "100%", background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(139,92,246,0.2)", borderRadius: 10,
-                    color: "#f0f0ff", padding: 12, fontSize: 14, resize: "none",
+                    width: "100%", background: "var(--bg-secondary)",
+                    border: "1px solid var(--border)", borderRadius: 8,
+                    color: "var(--text-primary)", padding: 12, fontSize: 14, resize: "none",
                     outline: "none", fontFamily: "inherit"
                   }}
                 />
@@ -237,69 +309,65 @@ export default function MarketDetailPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Bet Panel */}
             <motion.div
-              className="glass-card"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              style={{ padding: 24, position: "sticky", top: 82 }}
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 24, position: "sticky", top: 82 }}
             >
-              <h2 style={{ fontWeight: 700, fontSize: 16, marginBottom: 16 }}>🎯 예측 참여</h2>
+              <h2 style={{ fontWeight: 800, fontSize: 16, marginBottom: 16, color: "var(--text-primary)" }}>🎯 예측 참여</h2>
 
-              {participated ? (
+              {userBet ? (
                 <div style={{
                   textAlign: "center", padding: 24,
-                  background: betSide === "yes" ? "rgba(34,211,160,0.1)" : "rgba(244,63,94,0.1)",
-                  borderRadius: 12, border: `1px solid ${betSide === "yes" ? "rgba(34,211,160,0.3)" : "rgba(244,63,94,0.3)"}`,
+                  background: "var(--bg-secondary)",
+                  borderRadius: 8, border: `1px solid ${userBet.side === "yes" ? "var(--accent-yes)" : "var(--accent-no)"}`,
                 }}>
                   <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
-                  <p style={{ fontWeight: 700, color: betSide === "yes" ? "#22d3a0" : "#f43f5e" }}>
-                    {betSide === "yes" ? "YES" : "NO"} 예측 완료!
+                  <p style={{ fontWeight: 800, color: userBet.side === "yes" ? "var(--accent-yes)" : "var(--accent-no)" }}>
+                    {userBet.side === "yes" ? "YES" : "NO"} 예측 완료!
                   </p>
-                  <p style={{ color: "#9090b0", fontSize: 13, marginTop: 4 }}>베팅: {betAmount}P</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 4, fontWeight: 600 }}>베팅금액: {userBet.amount}P</p>
                 </div>
               ) : (
                 <>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
                     {(["yes", "no"] as const).map(side => (
                       <motion.button
                         key={side}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setBetSide(side)}
                         style={{
-                          padding: "14px 8px", borderRadius: 12, fontWeight: 800,
-                          fontSize: 16, cursor: "pointer", transition: "all 0.2s",
+                          padding: "14px 8px", borderRadius: 8, fontWeight: 800,
+                          fontSize: 15, cursor: "pointer", transition: "all 0.1s",
                           background: betSide === side
-                            ? (side === "yes" ? "linear-gradient(135deg, #059669, #22d3a0)" : "linear-gradient(135deg, #be123c, #f43f5e)")
-                            : "rgba(255,255,255,0.04)",
-                          color: betSide === side ? "white" : "#9090b0",
+                            ? (side === "yes" ? "var(--accent-yes)" : "var(--accent-no)")
+                            : "var(--bg-card-hover)",
+                          color: betSide === side ? "white" : "var(--text-primary)",
                           border: betSide === side
-                            ? "none"
-                            : `1px solid ${side === "yes" ? "rgba(34,211,160,0.2)" : "rgba(244,63,94,0.2)"}`,
-                          boxShadow: betSide === side
-                            ? `0 4px 16px ${side === "yes" ? "rgba(34,211,160,0.3)" : "rgba(244,63,94,0.3)"}`
-                            : "none"
+                            ? "1px solid transparent"
+                            : "1px solid var(--border)"
                         }}
                       >
                         {side === "yes" ? "📈 YES" : "📉 NO"}
-                        <div style={{ fontSize: 11, fontWeight: 500, marginTop: 2, opacity: 0.8 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, opacity: betSide === side ? 0.9 : 0.6 }}>
                           {side === "yes" ? market.yesProb : market.noProb}%
                         </div>
                       </motion.button>
                     ))}
                   </div>
 
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ color: "#9090b0", fontSize: 12, marginBottom: 8 }}>베팅 포인트</div>
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 8, fontWeight: 700 }}>베팅 포인트 설정</div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {[10, 50, 100, 200, 500].map(amt => (
                         <button
                           key={amt}
                           onClick={() => setBetAmount(amt)}
                           style={{
-                            padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600,
-                            cursor: "pointer", transition: "all 0.2s",
-                            background: betAmount === amt ? "#8b5cf6" : "rgba(255,255,255,0.05)",
-                            color: betAmount === amt ? "white" : "#9090b0",
-                            border: betAmount === amt ? "none" : "1px solid rgba(255,255,255,0.08)"
+                            padding: "8px 12px", borderRadius: 6, fontSize: 13, fontWeight: 700,
+                            cursor: "pointer", transition: "all 0.1s",
+                            background: betAmount === amt ? "var(--purple-primary)" : "var(--bg-secondary)",
+                            color: betAmount === amt ? "white" : "var(--text-secondary)",
+                            border: betAmount === amt ? "none" : "1px solid var(--border)"
                           }}
                         >
                           {amt}P
@@ -310,12 +378,12 @@ export default function MarketDetailPage() {
 
                   {betSide && (
                     <div style={{
-                      padding: 12, borderRadius: 10, marginBottom: 12,
-                      background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)"
+                      padding: 16, borderRadius: 8, marginBottom: 16,
+                      background: "var(--bg-secondary)", border: "1px solid var(--border)"
                     }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                        <span style={{ color: "#9090b0" }}>적중 시 예상 수익</span>
-                        <span style={{ color: "#22d3a0", fontWeight: 700 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
+                        <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>적중 시 예상 수익</span>
+                        <span style={{ color: "var(--accent-yes)", fontWeight: 800 }}>
                           +{Math.round(betAmount * (100 / (betSide === "yes" ? market.yesProb : market.noProb)) - betAmount)}P
                         </span>
                       </div>
@@ -324,12 +392,12 @@ export default function MarketDetailPage() {
 
                   <motion.button
                     className="btn-primary"
-                    style={{ width: "100%", padding: "13px", fontSize: 15, opacity: betSide ? 1 : 0.4 }}
+                    style={{ width: "100%", padding: "14px", fontSize: 15, borderRadius: 8, opacity: betSide ? 1 : 0.5 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={confirmBet}
                     disabled={!betSide}
                   >
-                    {betSide ? `${betAmount}P 예측 확정` : "YES 또는 NO 선택"}
+                    {betSide ? `${betAmount}P 예측 확정` : "조건을 선택해주세요"}
                   </motion.button>
                 </>
               )}
@@ -337,10 +405,10 @@ export default function MarketDetailPage() {
               <button
                 onClick={handleShare}
                 style={{
-                  width: "100%", marginTop: 10,
-                  background: "transparent", border: "1px solid rgba(139,92,246,0.2)",
-                  borderRadius: 10, padding: "10px", color: "#a78bfa",
-                  fontSize: 13, fontWeight: 600, cursor: "pointer"
+                  width: "100%", marginTop: 12,
+                  background: "transparent", border: "1px solid var(--border)",
+                  borderRadius: 8, padding: "12px", color: "var(--text-secondary)",
+                  fontSize: 13, fontWeight: 700, cursor: "pointer"
                 }}
               >
                 🔗 공유하고 +3P 받기
@@ -353,9 +421,9 @@ export default function MarketDetailPage() {
             {/* Back */}
             <Link href="/" style={{ textDecoration: "none" }}>
               <button style={{
-                width: "100%", padding: "12px", borderRadius: 12,
-                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-                color: "#9090b0", fontSize: 14, cursor: "pointer"
+                width: "100%", padding: "14px", borderRadius: 8,
+                background: "var(--bg-secondary)", border: "1px solid var(--border)",
+                color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: "pointer"
               }}>
                 ← 마켓 목록으로
               </button>
@@ -371,9 +439,9 @@ export default function MarketDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           style={{
             position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)",
-            zIndex: 300, background: "linear-gradient(135deg, #059669, #22d3a0)",
-            borderRadius: 14, padding: "14px 24px", color: "white", fontWeight: 700,
-            fontSize: 15, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", whiteSpace: "nowrap"
+            zIndex: 300, background: "var(--text-primary)",
+            borderRadius: 8, padding: "14px 24px", color: "var(--bg-primary)", fontWeight: 700,
+            fontSize: 15, boxShadow: "0 8px 32px rgba(0,0,0,0.1)", whiteSpace: "nowrap"
           }}
         >
           {toast}

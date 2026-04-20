@@ -73,7 +73,6 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
       background: "var(--bg-secondary)",
-      backdropFilter: "blur(20px)",
       borderBottom: "1px solid var(--border)",
     }}>
       <div style={{
@@ -90,7 +89,7 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
           <div>
             <span style={{
               fontSize: 22, fontWeight: 900,
-              color: "var(--purple-primary)", letterSpacing: "-0.04em"
+              color: "var(--text-primary)", letterSpacing: "-0.04em"
             }}>Policat</span>
           </div>
         </Link>
@@ -101,12 +100,12 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
             const isActive = pathname === href;
             return (
               <Link key={href} href={href} style={{
-                color: isActive ? "var(--purple-primary)" : "var(--text-secondary)", 
+                color: isActive ? "var(--text-primary)" : "var(--text-secondary)", 
                 textDecoration: "none",
-                padding: "8px 14px", borderRadius: 8,
+                padding: "8px 14px", borderRadius: 6,
                 fontSize: 15, fontWeight: isActive ? 800 : 600,
-                transition: "all 0.2s",
-                background: isActive ? "rgba(139, 92, 246, 0.1)" : "transparent"
+                transition: "all 0.1s",
+                background: isActive ? "var(--bg-card-hover)" : "transparent"
               }}
                 onMouseEnter={e => {
                   if (!isActive) e.currentTarget.style.color = "var(--text-primary)";
@@ -142,9 +141,9 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   style={{
-                    background: "var(--bg-card)",
+                    background: "var(--bg-secondary)",
                     border: "1px solid var(--border)",
-                    borderRadius: 10, padding: "6px 14px",
+                    borderRadius: 6, padding: "6px 12px",
                     display: "flex", alignItems: "center", gap: 8,
                   }}
                 >
@@ -189,9 +188,9 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
                       transition={{ duration: 0.2 }}
                       style={{
                         position: "absolute", top: 48, right: 0,
-                        width: 220, background: "var(--bg-primary)",
-                        border: "1px solid var(--border)", borderRadius: 12,
-                        boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+                        width: 220, background: "var(--bg-secondary)",
+                        border: "1px solid var(--border)", borderRadius: 8,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                         overflow: "hidden", zIndex: 1000
                       }}
                     >
@@ -209,7 +208,7 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
                           <PlusCircle size={16} /> 마켓 제안하기
                         </Link>
                         {user.email === "koesig@gmail.com" && (
-                          <Link href="/admin" onClick={() => setProfileDropdown(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", textDecoration: "none", color: "white", borderRadius: 8, fontSize: 14, fontWeight: 700, background: "var(--accent-no)", marginTop: 4 }}>
+                          <Link href="/admin" onClick={() => setProfileDropdown(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", textDecoration: "none", color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 13, fontWeight: 700, background: "var(--bg-secondary)", marginTop: 4 }}>
                             <Settings size={16} /> 관리자 패널
                           </Link>
                         )}
@@ -229,7 +228,7 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
               onClick={handleLogin}
               style={{
                 background: "var(--purple-primary)",
-                color: "white", padding: "8px 16px", borderRadius: 8,
+                color: "white", padding: "8px 16px", borderRadius: 6,
                 fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer",
                 display: "flex", alignItems: "center", gap: 6
               }}

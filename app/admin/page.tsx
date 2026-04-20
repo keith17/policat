@@ -25,10 +25,11 @@ interface MockMarket {
 export default function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"users" | "markets">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "markets" | "orders">("users");
 
   const [users, setUsers] = useState<any[]>([]);
   const [markets, setMarkets] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const supabase = createClient();
 
   useEffect(() => {
@@ -42,6 +43,10 @@ export default function AdminDashboard() {
         // Fetch markets
         const { data: mkts } = await supabase.from("markets").select("*").order("created_at", { ascending: false });
         if (mkts) setMarkets(mkts);
+        
+        // Fetch shop orders
+        const { data: ords } = await supabase.from("shop_orders").select("*").order("created_at", { ascending: false });
+        if (ords) setOrders(ords);
       }
       setLoading(false);
     }
@@ -96,6 +101,11 @@ export default function AdminDashboard() {
       await supabase.from("markets").update({ status: action }).eq("id", id);
     }
     setMarkets(prev => prev.map(m => m.id === id ? { ...m, status: action } : m));
+  };
+
+  const handleCompleteOrder = async (id: string) => {
+    await supabase.from("shop_orders").update({ status: "completed" }).eq("id", id);
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: "completed" } : o));
   };
 
   const executePointAdjustment = async () => {
@@ -161,6 +171,17 @@ export default function AdminDashboard() {
           >
             <TrendingUp size={18} /> 마켓 숨김/정산 관리
           </button>
+          <button 
+            onClick={() => setActiveTab("orders")}
+            style={{
+              padding: "12px 24px", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s", border: "none",
+              background: activeTab === "orders" ? "var(--purple-primary)" : "var(--bg-card)",
+              color: activeTab === "orders" ? "white" : "var(--text-secondary)",
+            }}
+          >
+            <CheckCircle size={18} /> 상점 주문 (쿠폰 발송)
+          </button>
         </div>
 
         {/* Contents Area */}
@@ -218,7 +239,7 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
-          ) : (
+          ) : activeTab === "markets" ? (
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
               {markets.map(m => (
                 <div key={m.id} style={{
@@ -264,6 +285,39 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+              {orders.map(o => {
+                const userProfile = users.find(u => u.id === o.user_id);
+                return (
+                  <div key={o.id} style={{
+                    padding: 20, borderRadius: 8, border: "1px solid var(--border)",
+                    background: "var(--bg-card)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>주문일시: {new Date(o.created_at).toLocaleString()}</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>{o.item_name} ({formatPoints(o.price)})</div>
+                      <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+                        신청자: {userProfile ? userProfile.email : "알 수 없음"} <br/>
+                        수신 연락처: <strong style={{ color: "var(--purple-primary)" }}>{o.contact_info}</strong>
+                      </div>
+                    </div>
+                    <div>
+                      {o.status === "pending" ? (
+                        <button onClick={() => handleCompleteOrder(o.id)} style={{ padding: "10px 20px", background: "var(--accent-yes)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
+                          카톡/SMS 전송 완료 (승인)
+                        </button>
+                      ) : (
+                        <span style={{ padding: "8px 16px", background: "var(--bg-secondary)", color: "var(--text-muted)", border: "1px solid var(--border)", borderRadius: 8, fontWeight: 700 }}>
+                          발송 완료됨
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {orders.length === 0 && <div style={{ color: "var(--text-muted)", textAlign: "center", padding: 40 }}>들어온 상점 주문이 없습니다.</div>}
             </div>
           )}
         </div>

@@ -86,7 +86,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="animated-bg" style={{ minHeight: "100vh", paddingBottom: 80 }}>
+      <div style={{ minHeight: "100vh", paddingBottom: 80, background: "var(--bg-primary)" }}>
         <Navbar points={0} streak={0} />
         <main style={{ maxWidth: 800, margin: "0 auto", padding: "100px 20px 40px", textAlign: "center" }}>
           <div>로딩 중이거나 로그인이 필요합니다.</div>
@@ -96,7 +96,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="animated-bg" style={{ minHeight: "100vh", paddingBottom: 80 }}>
+    <div style={{ minHeight: "100vh", paddingBottom: 80, background: "var(--bg-primary)" }}>
       {/* Passing points and streak props; these will pull from real DB eventually */}
       <Navbar points={points} xp={xp} streak={12} />
       
@@ -129,7 +129,7 @@ export default function ProfilePage() {
 
           <div style={{ textAlign: "right", background: "var(--bg-secondary)", padding: "16px 24px", borderRadius: 12, border: "1px solid var(--border)" }}>
             <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>보유 포인트</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: "var(--purple-primary)", marginBottom: 8 }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: "var(--text-primary)", marginBottom: 8 }}>
               {formatPoints(points)}
             </div>
             
@@ -138,7 +138,7 @@ export default function ProfilePage() {
               {formatPoints(xp).replace('P', ' XP')}
             </div>
             
-            <div style={{ fontSize: 13, color: tierInfo.color, fontWeight: 700, marginTop: 8, padding: "4px 8px", background: "rgba(0,0,0,0.2)", borderRadius: 6, display: "inline-block" }}>
+            <div style={{ fontSize: 13, color: tierInfo.color, fontWeight: 700, marginTop: 8, padding: "4px 8px", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 6, display: "inline-block" }}>
               {tierInfo.emoji} {tierInfo.label} 티어
             </div>
           </div>

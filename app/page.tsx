@@ -182,7 +182,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="animated-bg" style={{ minHeight: "100vh" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
       <Navbar points={points} xp={xp} streak={streak} />
 
       {/* Hero Section */}
@@ -199,24 +199,22 @@ export default function Home() {
           >
             <div style={{
               display: "inline-flex", alignItems: "center", gap: 8,
-              background: "rgba(139,92,246,0.1)", border: "1px solid var(--border)",
-              borderRadius: 100, padding: "6px 16px", marginBottom: 24
+              background: "var(--bg-card)", border: "1px solid var(--border)",
+              borderRadius: 4, padding: "6px 12px", marginBottom: 24
             }}>
               <span className="pulse-dot" style={{
                 width: 8, height: 8, borderRadius: "50%",
                 background: "var(--accent-yes)", display: "inline-block"
               }} />
-              <span style={{ color: "var(--purple-primary)", fontSize: 13, fontWeight: 700 }}>
+              <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700 }}>
                 실시간 예측 마켓 운영 중
               </span>
             </div>
 
-            <h1 style={{ fontSize: "clamp(36px, 6vw, 64px)", fontWeight: 900, lineHeight: 1.2, marginBottom: 20, letterSpacing: "-0.02em" }}>
-              <span style={{ color: "var(--purple-primary)" }}>세상의 모든 이슈,</span>
-              <br />
-              <span style={{ color: "var(--text-primary)" }}>당신의 예측이</span>
-              <br />
-              <span style={{ color: "var(--text-primary)" }}>포인트가 됩니다</span>
+            <h1 style={{ fontSize: "clamp(32px, 6vw, 56px)", fontWeight: 900, lineHeight: 1.1, marginBottom: 20, letterSpacing: "-0.04em", color: "var(--text-primary)" }}>
+              세상의 모든 이슈,<br />
+              당신의 예측이<br />
+              가치가 됩니다
             </h1>
 
             <p style={{ color: "var(--text-secondary)", fontSize: 18, lineHeight: 1.6, marginBottom: 32 }}>
@@ -224,10 +222,9 @@ export default function Home() {
               가입비·결제 없이 누구나 참여할 수 있습니다.
             </p>
 
-            <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <motion.button
-                className="btn-primary"
-                style={{ padding: "16px 32px", fontSize: 16, minWidth: 160 }}
+                style={{ background: "var(--purple-primary)", color: "white", padding: "14px 28px", fontSize: 16, minWidth: 160, border: "none", borderRadius: 6, fontWeight: 700, cursor: "pointer" }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={claimDaily}
@@ -237,9 +234,9 @@ export default function Home() {
               <Link href="/guide" style={{ textDecoration: "none" }}>
                 <motion.button
                   style={{
-                    background: "transparent",
-                    border: "1px solid var(--border-hover)",
-                    borderRadius: 8, padding: "16px 32px",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 6, padding: "14px 28px",
                     color: "var(--text-primary)", fontSize: 16, fontWeight: 700, cursor: "pointer",
                     minWidth: 160
                   }}
@@ -296,13 +293,13 @@ export default function Home() {
               onClick={() => setFilter(key)}
               whileTap={{ scale: 0.95 }}
               style={{
-                padding: "7px 16px", borderRadius: 100, fontSize: 13, fontWeight: 600,
-                cursor: "pointer", transition: "all 0.2s",
+                padding: "7px 16px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+                cursor: "pointer", transition: "all 0.1s",
                 background: filter === key
-                  ? "var(--gradient-primary)"
-                  : "var(--bg-card-hover)",
+                  ? "var(--purple-primary)"
+                  : "var(--bg-card)",
                 color: filter === key ? "white" : "var(--text-secondary)",
-                border: filter === key ? "none" : "1px solid var(--border)"
+                border: filter === key ? "1px solid var(--purple-primary)" : "1px solid var(--border)"
               }}
             >
               {label}
@@ -360,9 +357,10 @@ export default function Home() {
                 position: "fixed", top: "50%", left: "50%",
                 transform: "translate(-50%, -50%)",
                 zIndex: 201, width: "90%", maxWidth: 420,
-                background: "#14142a",
-                border: "1px solid rgba(139,92,246,0.3)",
-                borderRadius: 20, padding: 28
+                background: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: 12, padding: 28,
+                boxShadow: "0 20px 40px rgba(0,0,0,0.1)"
               }}
             >
               <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, color: "var(--text-primary)" }}>
@@ -397,8 +395,8 @@ export default function Home() {
                 </div>
 
                 <div style={{
-                  marginTop: 16, padding: 16, borderRadius: 12,
-                  background: "rgba(139,92,246,0.08)",
+                  marginTop: 16, padding: 16, borderRadius: 8,
+                  background: "var(--bg-secondary)",
                   border: "1px solid var(--border)"
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
@@ -421,7 +419,7 @@ export default function Home() {
                 <button
                   onClick={() => setBetModal(null)}
                   style={{
-                    flex: 1, padding: "13px", borderRadius: 12,
+                    flex: 1, padding: "13px", borderRadius: 8,
                     background: "var(--bg-card-hover)",
                     border: "1px solid var(--border)",
                     color: "var(--text-secondary)", fontSize: 15, fontWeight: 600, cursor: "pointer"
@@ -431,7 +429,7 @@ export default function Home() {
                   onClick={confirmBet}
                   whileTap={{ scale: 0.97 }}
                   className={betModal.side === "yes" ? "btn-yes" : "btn-no"}
-                  style={{ flex: 2, padding: "13px", fontSize: 15 }}
+                  style={{ flex: 2, padding: "13px", fontSize: 15, borderRadius: 8 }}
                 >
                   {betAmount}P 예측 확정
                 </motion.button>
