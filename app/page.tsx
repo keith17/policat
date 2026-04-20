@@ -11,6 +11,7 @@ import { markets as initialMarkets, formatPoints, getTier, tierConfig } from "@/
 
 export default function Home() {
   const [points, setPoints] = useState(500);
+  const [xp, setXp] = useState(500);
   const [streak, setStreak] = useState(3);
   const [markets, setMarkets] = useState(initialMarkets);
   const [filter, setFilter] = useState("all");
@@ -27,6 +28,7 @@ export default function Home() {
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single();
         if (profile) {
           setPoints(profile.points);
+          setXp(profile.xp !== undefined ? profile.xp : profile.points); // fallback if SQL not run yet
           setStreak(profile.streak || 0);
         }
       }
@@ -94,7 +96,7 @@ export default function Home() {
     fetchMarketsAndBets();
   }, [user, supabase]);
 
-  const tier = getTier(points);
+  const tier = getTier(xp);
   const tierInfo = tierConfig[tier as keyof typeof tierConfig];
 
   const showToast = (msg: string, type: "success" | "info" | "warn" = "success") => {
@@ -147,11 +149,24 @@ export default function Home() {
     // NOTE: Market pools should ideally be updated via a Postgres Trigger or Edge Function to bypass normal user RLS.
   };
 
-  const claimDaily = () => {
-    if (dailyClaimed) return;
+  const claimDaily = async () => {
+    if (dailyClaimed || !user) return;
     const bonus = 5 + streak * 5;
-    setPoints(p => p + bonus);
+    const newPoints = points + bonus;
+    const newXp = xp + bonus;
+
+    setPoints(newPoints);
+    setXp(newXp);
     setDailyClaimed(true);
+    
+    await supabase.from("profiles").update({ points: newPoints, xp: newXp }).eq("id", user.id);
+    await supabase.from("point_transactions").insert({
+      user_id: user.id,
+      amount: bonus,
+      type: "reward",
+      description: "출석 체크 보상"
+    });
+    
     showToast(`🌅 출석 체크 완료! +${bonus}P`, "success");
   };
 
@@ -168,7 +183,7 @@ export default function Home() {
 
   return (
     <div className="animated-bg" style={{ minHeight: "100vh" }}>
-      <Navbar points={points} streak={streak} />
+      <Navbar points={points} xp={xp} streak={streak} />
 
       {/* Hero Section */}
       <section style={{

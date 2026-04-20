@@ -10,6 +10,7 @@ import { Play } from "lucide-react";
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [points, setPoints] = useState(0);
+  const [xp, setXp] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +30,7 @@ export default function ProfilePage() {
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
         if (profile) {
           setPoints(profile.points);
-          // streak logic if needed
+          setXp(profile.xp !== undefined ? profile.xp : profile.points); // fallback if SQL not run yet
         }
         
         const { data: txs } = await supabase.from("point_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
@@ -46,7 +47,7 @@ export default function ProfilePage() {
     loadData();
   }, [supabase]);
 
-  const tier = getTier(points);
+  const tier = getTier(xp);
   const tierInfo = tierConfig[tier as keyof typeof tierConfig];
 
   const handleToggleAd = () => {
@@ -63,9 +64,10 @@ export default function ProfilePage() {
 
     if (!user) return;
     const newPoints = points + AD_REWARD_AMOUNT;
+    const newXp = xp + AD_REWARD_AMOUNT;
     
     // DB 업데이트
-    await supabase.from("profiles").update({ points: newPoints }).eq("id", user.id);
+    await supabase.from("profiles").update({ points: newPoints, xp: newXp }).eq("id", user.id);
     const { data: insertedTx } = await supabase.from("point_transactions").insert({
       user_id: user.id,
       amount: AD_REWARD_AMOUNT,
@@ -75,6 +77,7 @@ export default function ProfilePage() {
 
     // 상태 업데이트
     setPoints(newPoints);
+    setXp(newXp);
     setAdsWatchedToday(prev => prev + 1);
     if (insertedTx) {
       setTransactions(prev => [insertedTx, ...prev]);
@@ -95,7 +98,7 @@ export default function ProfilePage() {
   return (
     <div className="animated-bg" style={{ minHeight: "100vh", paddingBottom: 80 }}>
       {/* Passing points and streak props; these will pull from real DB eventually */}
-      <Navbar points={points} streak={12} />
+      <Navbar points={points} xp={xp} streak={12} />
       
       <main style={{ maxWidth: 800, margin: "0 auto", padding: "100px 20px 40px" }}>
         
@@ -126,10 +129,16 @@ export default function ProfilePage() {
 
           <div style={{ textAlign: "right", background: "var(--bg-secondary)", padding: "16px 24px", borderRadius: 12, border: "1px solid var(--border)" }}>
             <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>보유 포인트</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: "var(--purple-primary)" }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: "var(--purple-primary)", marginBottom: 8 }}>
               {formatPoints(points)}
             </div>
-            <div style={{ fontSize: 12, color: tierInfo.color, fontWeight: 700, marginTop: 4 }}>
+            
+            <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 2 }}>누적 경험치(XP)</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>
+              {formatPoints(xp).replace('P', ' XP')}
+            </div>
+            
+            <div style={{ fontSize: 13, color: tierInfo.color, fontWeight: 700, marginTop: 8, padding: "4px 8px", background: "rgba(0,0,0,0.2)", borderRadius: 6, display: "inline-block" }}>
               {tierInfo.emoji} {tierInfo.label} 티어
             </div>
           </div>

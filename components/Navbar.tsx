@@ -9,10 +9,11 @@ import { createClient } from "@/utils/supabase/client";
 
 interface NavbarProps {
   points: number;
+  xp?: number;
   streak: number;
 }
 
-export default function Navbar({ points, streak }: NavbarProps) {
+export default function Navbar({ points, xp = points, streak }: NavbarProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
@@ -57,7 +58,7 @@ export default function Navbar({ points, streak }: NavbarProps) {
     setProfileDropdown(false);
   };
 
-  const tier = getTier(points);
+  const tier = getTier(xp);
   const tierInfo = tierConfig[tier as keyof typeof tierConfig];
 
   const navLinks = [
@@ -65,6 +66,7 @@ export default function Navbar({ points, streak }: NavbarProps) {
     { href: "/", label: "마켓" },
     { href: "/leaderboard", label: "랭킹" },
     { href: "/earn", label: "포인트 획득" },
+    { href: "/shop", label: "상점(교환)" },
   ];
 
   return (
