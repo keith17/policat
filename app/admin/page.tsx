@@ -27,17 +27,26 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"users" | "markets">("users");
 
-  const [mockUsers, setMockUsers] = useState<MockUser[]>([
-    { id: "1", email: "koesig@gmail.com", name: "최고 관리자", points: 1530000, isAdmin: true },
-    { id: "2", email: "test1@gmail.com", name: "일반유저A", points: 300, isAdmin: false },
-    { id: "3", email: "predictor@gmail.com", name: "예측의신", points: 450000, isAdmin: false },
-  ]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [markets, setMarkets] = useState<any[]>([]);
+  const supabase = createClient();
 
-  const [mockMarkets, setMockMarkets] = useState<MockMarket[]>([
-    { id: "m1", title: "비트코인 4월 내 100K 돌파?", status: "pending", yesAmount: 0, noAmount: 0 },
-    { id: "m2", title: "코스피가 이번 달 안에 2,700선을 돌파할까?", status: "active", yesAmount: 31200, noAmount: 19100 },
-    { id: "m3", title: "삼성전자 주가가 한 달 내 8만 원 회복할까?", status: "active", yesAmount: 22400, noAmount: 28500 },
-  ]);
+  useEffect(() => {
+    async function loadAdminData() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user && user.email === "koesig@gmail.com") {
+        // Fetch profiles
+        const { data: profiles } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+        if (profiles) setUsers(profiles);
+        // Fetch markets
+        const { data: mkts } = await supabase.from("markets").select("*").order("created_at", { ascending: false });
+        if (mkts) setMarkets(mkts);
+      }
+      setLoading(false);
+    }
+    loadAdminData();
+  }, [supabase]);
 
   // Modals state
   const [pointModal, setPointModal] = useState<{ userId: string; name: string } | null>(null);
@@ -46,14 +55,7 @@ export default function AdminDashboard() {
   const [refundModal, setRefundModal] = useState<{ marketId: string; title: string, total: number } | null>(null);
   const [refundReason, setRefundReason] = useState("");
 
-  const supabase = createClient();
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      setLoading(false);
-    });
-  }, [supabase]);
+  // (Data loading moved up)
 
   if (loading) return <div className="animated-bg" style={{ minHeight: "100vh" }} />;
 
@@ -80,35 +82,47 @@ export default function AdminDashboard() {
     );
   }
 
-  const toggleAdmin = (id: string) => {
-    if (id === "1") return;
-    setMockUsers(prev => prev.map(u => u.id === id ? { ...u, isAdmin: !u.isAdmin } : u));
+  const toggleAdmin = async (id: string, currentAdmin: boolean) => {
+    if (id === user.id) return;
+    await supabase.from("profiles").update({ is_admin: !currentAdmin }).eq("id", id);
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, is_admin: !currentAdmin } : u));
   };
 
-  const handleMarketAction = (id: string, action: MockMarket["status"]) => {
-    setMockMarkets(prev => prev.map(m => m.id === id ? { ...m, status: action } : m));
+  const handleMarketAction = async (id: string, action: MockMarket["status"]) => {
+    if (action === "resolved_yes" || action === "resolved_no") {
+      const side = action === "resolved_yes" ? "yes" : "no";
+      await supabase.rpc('resolve_market', { p_market_id: id, p_winning_side: side });
+    } else {
+      await supabase.from("markets").update({ status: action }).eq("id", id);
+    }
+    setMarkets(prev => prev.map(m => m.id === id ? { ...m, status: action } : m));
   };
 
-  const executePointAdjustment = () => {
+  const executePointAdjustment = async () => {
     if (!pointModal) return;
     const val = parseInt(pointAdj.amount);
     if (isNaN(val) || val <= 0) return;
 
-    setMockUsers(prev => prev.map(u => {
-      if (u.id === pointModal.userId) {
-        return { ...u, points: pointAdj.type === "add" ? u.points + val : Math.max(0, u.points - val) };
-      }
-      return u;
-    }));
+    const userProfile = users.find(u => u.id === pointModal.userId);
+    const newPoints = pointAdj.type === "add" ? userProfile.points + val : Math.max(0, userProfile.points - val);
+
+    await supabase.from("profiles").update({ points: newPoints }).eq("id", pointModal.userId);
+    await supabase.from("point_transactions").insert({
+      user_id: pointModal.userId,
+      amount: pointAdj.type === "add" ? val : -val,
+      type: pointAdj.type === "add" ? "reward" : "refund",
+      description: `관리자 조정: ${pointAdj.reason}`
+    });
+
+    setUsers(prev => prev.map(u => u.id === pointModal.userId ? { ...u, points: newPoints } : u));
     setPointModal(null);
     setPointAdj({ amount: "", reason: "", type: "add" });
   };
 
-  const executeRefund = () => {
+  const executeRefund = async () => {
     if (!refundModal) return;
-    // 1. Set market status to hidden
-    handleMarketAction(refundModal.marketId, "hidden");
-    // (Here, actual backend would return YES/NO participants their amounts via TX processing)
+    await supabase.rpc('refund_market', { p_market_id: refundModal.marketId });
+    setMarkets(prev => prev.map(m => m.id === refundModal.marketId ? { ...m, status: "hidden" } : m));
     setRefundModal(null);
     setRefundReason("");
   };
@@ -162,19 +176,19 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockUsers.map(u => {
+                  {users.map(u => {
                     const tInfo = tierConfig[getTier(u.points) as keyof typeof tierConfig];
                     return (
                       <tr key={u.id} style={{ borderBottom: "1px solid var(--border)" }}>
                         <td style={{ padding: "16px 20px" }}>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{u.name}</div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{u.full_name || u.email}</div>
                           <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>{u.email}</div>
                         </td>
                         <td style={{ padding: "16px 20px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                             <span style={{ fontSize: 14, fontWeight: 800 }}>{formatPoints(u.points)}</span>
                             <button 
-                              onClick={() => setPointModal({ userId: u.id, name: u.name })}
+                              onClick={() => setPointModal({ userId: u.id, name: u.full_name || u.email })}
                               style={{ 
                                 background: "rgba(139,92,246,0.1)", border: "1px solid var(--purple-primary)", color: "var(--purple-primary)",
                                 borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 
@@ -186,16 +200,16 @@ export default function AdminDashboard() {
                         </td>
                         <td style={{ padding: "16px 20px", textAlign: "center" }}>
                           <button 
-                            onClick={() => toggleAdmin(u.id)}
-                            disabled={u.id === "1"}
+                            onClick={() => toggleAdmin(u.id, u.is_admin)}
+                            disabled={u.email === "koesig@gmail.com"}
                             style={{
-                              padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: u.id === "1" ? "not-allowed" : "pointer",
-                              border: `1px solid ${u.isAdmin ? "var(--accent-no)" : "var(--border)"}`,
-                              background: u.isAdmin ? "rgba(244,63,94,0.1)" : "transparent",
-                              color: u.isAdmin ? "var(--accent-no)" : "var(--text-secondary)"
+                              padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: u.email === "koesig@gmail.com" ? "not-allowed" : "pointer",
+                              border: `1px solid ${u.is_admin ? "var(--accent-no)" : "var(--border)"}`,
+                              background: u.is_admin ? "rgba(244,63,94,0.1)" : "transparent",
+                              color: u.is_admin ? "var(--accent-no)" : "var(--text-secondary)"
                             }}
                           >
-                            {u.isAdmin ? "✔️ Admin" : "권한 부여"}
+                            {u.is_admin ? "✔️ Admin" : "권한 부여"}
                           </button>
                         </td>
                       </tr>
@@ -206,7 +220,7 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-              {mockMarkets.map(m => (
+              {markets.map(m => (
                 <div key={m.id} style={{
                   padding: 24, borderRadius: 12, border: "1px solid var(--border)",
                   background: m.status === "hidden" ? "var(--bg-secondary)" : (m.status === "pending" ? "rgba(245, 158, 11, 0.05)" : "transparent"),
@@ -226,7 +240,7 @@ export default function AdminDashboard() {
                     </div>
                     {["active", "hidden"].includes(m.status) && (
                       <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                        누적 베팅: YES {formatPoints(m.yesAmount)} / NO {formatPoints(m.noAmount)} (합계: {formatPoints(m.yesAmount + m.noAmount)})
+                        누적 베팅: YES {formatPoints(m.yes_pool)} / NO {formatPoints(m.no_pool)} (합계: {formatPoints(m.yes_pool + m.no_pool)})
                       </div>
                     )}
                   </div>
@@ -234,17 +248,17 @@ export default function AdminDashboard() {
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
                     {m.status === "pending" && (
                       <>
-                        <button onClick={() => handleMarketAction(m.id, "active")} style={{ padding: "8px 16px", background: "var(--accent-yes)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>승인/게시</button>
-                        <button onClick={() => handleMarketAction(m.id, "cancelled")} style={{ padding: "8px 16px", background: "transparent", color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>거절</button>
+                        <button onClick={() => handleMarketAction(m.id, "active" as any)} style={{ padding: "8px 16px", background: "var(--accent-yes)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>승인/게시</button>
+                        <button onClick={() => handleMarketAction(m.id, "cancelled" as any)} style={{ padding: "8px 16px", background: "transparent", color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>거절</button>
                       </>
                     )}
                     {m.status === "active" && (
                       <>
-                        <button onClick={() => setRefundModal({ marketId: m.id, title: m.title, total: m.yesAmount + m.noAmount })} style={{ padding: "8px 16px", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 8, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                        <button onClick={() => setRefundModal({ marketId: m.id, title: m.title, total: m.yes_pool + m.no_pool })} style={{ padding: "8px 16px", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 8, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                           <EyeOff size={14} /> 숨김 및 전체 환불
                         </button>
-                        <button onClick={() => handleMarketAction(m.id, "resolved_yes")} style={{ padding: "8px 16px", background: "rgba(34,211,160,0.1)", color: "var(--accent-yes)", border: "1px solid var(--accent-yes)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>YES 판정</button>
-                        <button onClick={() => handleMarketAction(m.id, "resolved_no")} style={{ padding: "8px 16px", background: "rgba(244,63,94,0.1)", color: "var(--accent-no)", border: "1px solid var(--accent-no)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>NO 판정</button>
+                        <button onClick={() => handleMarketAction(m.id, "resolved_yes" as any)} style={{ padding: "8px 16px", background: "rgba(34,211,160,0.1)", color: "var(--accent-yes)", border: "1px solid var(--accent-yes)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>YES 판정</button>
+                        <button onClick={() => handleMarketAction(m.id, "resolved_no" as any)} style={{ padding: "8px 16px", background: "rgba(244,63,94,0.1)", color: "var(--accent-no)", border: "1px solid var(--accent-no)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>NO 판정</button>
                       </>
                     )}
                   </div>

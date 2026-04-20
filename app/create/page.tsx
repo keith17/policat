@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import { Info, CheckCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
 
 export default function CreateMarketPage() {
   const [formData, setFormData] = useState({
@@ -15,17 +16,47 @@ export default function CreateMarketPage() {
     initialNo: 50,
   });
   const [submitted, setSubmitted] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [points, setPoints] = useState(0);
+  const supabase = createClient();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      setUser(user);
+      if (user) {
+        const { data } = await supabase.from("profiles").select("points").eq("id", user.id).single();
+        if (data) setPoints(data.points);
+      }
+    });
+  }, [supabase]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here we would normally insert into Supabase 'markets' table with status 'pending' or 'active'
-    setSubmitted(true);
+    if (!user) {
+      alert("로그인이 필요합니다!");
+      return;
+    }
+    
+    // We insert into markets table. Note: endDate and description might need schema update in DB.
+    const { error } = await supabase.from("markets").insert({
+      title: formData.title,
+      category: formData.category,
+      created_by: user.id,
+      status: "pending"
+    });
+
+    if (!error) {
+      setSubmitted(true);
+    } else {
+      alert("제안 접수 중 오류가 발생했습니다.");
+      console.error(error);
+    }
   };
 
   return (
     <div className="animated-bg" style={{ minHeight: "100vh", paddingBottom: 80 }}>
       {/* Assuming Navbar defaults to 0 if we don't pass real points, but we'll soon connect it */}
-      <Navbar points={300} streak={0} />
+      <Navbar points={points} streak={0} />
 
       <main style={{ maxWidth: 640, margin: "0 auto", padding: "100px 20px 40px" }}>
         

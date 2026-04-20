@@ -22,16 +22,77 @@ export default function Home() {
   const supabase = createClient();
 
   useEffect(() => {
+    async function loadProfile(currentUser: any) {
+      if (currentUser) {
+        const { data: profile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single();
+        if (profile) {
+          setPoints(profile.points);
+          setStreak(profile.streak || 0);
+        }
+      }
+    }
+
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
+      loadProfile(user);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      loadProfile(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
   }, [supabase]);
+
+  useEffect(() => {
+    async function fetchMarketsAndBets() {
+      const { data: mkts } = await supabase.from("markets")
+        .select("*")
+        .in("status", ["active", "pending"])
+        .order("created_at", { ascending: false });
+      
+      let userBets: any[] = [];
+      if (user) {
+        const { data: bets } = await supabase.from("bets").select("*").eq("user_id", user.id);
+        userBets = bets || [];
+      }
+
+      if (mkts) {
+        let enhancedMkts = mkts.map((m: any) => {
+           const total = m.yes_pool + m.no_pool;
+           const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
+           const noProb = total > 0 ? 100 - yesProb : 50;
+           
+           const myBetRecord = userBets.find(b => b.market_id === m.id);
+           
+           return {
+             id: m.id,
+             title: m.title,
+             category: m.category,
+             categoryLabel: m.category === 'economy' ? '경제' : m.category === 'politics' ? '정치' : m.category === 'society' ? '사회' : '스포츠',
+             emoji: m.category === 'economy' ? '📈' : m.category === 'politics' ? '🏛️' : m.category === 'society' ? '🤝' : '⚽',
+             yesProb, noProb,
+             yesAmount: m.yes_pool,
+             noAmount: m.no_pool,
+             endDate: m.created_at, // Using created_at for endDate as fallback
+             description: m.description || "",
+             totalVolume: total,
+             participants: Math.floor(total / 100) + 1, // mock count
+             daysLeft: Math.max(0, 7 - Math.floor((new Date().getTime() - new Date(m.created_at).getTime()) / (1000 * 60 * 60 * 24))),
+             hot: total > 5000,
+             new: new Date().getTime() - new Date(m.created_at).getTime() < 86400000 * 2,
+             myBet: myBetRecord ? myBetRecord.side : null,
+             myBetAmount: myBetRecord ? myBetRecord.amount : 0
+           };
+        });
+        setMarkets(enhancedMkts);
+      } else {
+        setMarkets([]);
+      }
+    }
+    fetchMarketsAndBets();
+  }, [user, supabase]);
 
   const tier = getTier(points);
   const tierInfo = tierConfig[tier as keyof typeof tierConfig];
@@ -50,18 +111,40 @@ export default function Home() {
     setBetAmount(50);
   };
 
-  const confirmBet = () => {
-    if (!betModal) return;
+  const confirmBet = async () => {
+    if (!betModal || !user) return;
     if (points < betAmount) {
       showToast("포인트가 부족합니다! [포인트 획득] 메뉴에서 광고를 시청하세요.", "warn");
       return;
     }
-    setPoints(p => p - betAmount);
+    const newPoints = points - betAmount;
+    setPoints(newPoints);
     setMarkets(prev => prev.map(m =>
       m.id === betModal.marketId ? { ...m, myBet: betModal.side, myBetAmount: betAmount } : m
     ));
     setBetModal(null);
     showToast(`🎯 예측 완료! ${betAmount}P 베팅`, "success");
+
+    // Supabase Insert & Update
+    await supabase.from("bets").insert({
+      user_id: user.id,
+      market_id: betModal.marketId,
+      side: betModal.side,
+      amount: betAmount
+    });
+    
+    // Update Profile points
+    await supabase.from("profiles").update({ points: newPoints }).eq("id", user.id);
+    
+    // Log transaction
+    await supabase.from("point_transactions").insert({
+      user_id: user.id,
+      amount: -betAmount,
+      type: "bet",
+      description: `예측 참여 (${betModal.side.toUpperCase()})`
+    });
+
+    // NOTE: Market pools should ideally be updated via a Postgres Trigger or Edge Function to bypass normal user RLS.
   };
 
   const claimDaily = () => {

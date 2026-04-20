@@ -7,25 +7,33 @@ import { motion } from "framer-motion";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
-  const [points, setPoints] = useState(12500); // 12,500 for demo
+  const [points, setPoints] = useState(0);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    async function loadData() {
+      const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-    });
+      if (user) {
+        const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+        if (profile) {
+          setPoints(profile.points);
+          // streak logic if needed
+        }
+        
+        const { data: txs } = await supabase.from("point_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+        if (txs) setTransactions(txs);
+      }
+      setLoading(false);
+    }
+    loadData();
   }, [supabase]);
 
   const tier = getTier(points);
   const tierInfo = tierConfig[tier as keyof typeof tierConfig];
-
-  const transactions = [
-    { id: 1, date: "2026-04-18", desc: "코스피 예측 적중 배당금 (YES)", amount: "+8,200P", type: "reward" },
-    { id: 2, date: "2026-04-17", desc: "광고 시청 보상", amount: "+500P", type: "earn" },
-    { id: 3, date: "2026-04-15", desc: "한국은행 기준금리 예측 참여 (NO)", amount: "-2,000P", type: "bet" },
-    { id: 4, date: "2026-04-10", desc: "신규 가입 환영 포인트", amount: "+5,800P", type: "earn" },
-  ];
 
   if (!user) {
     return (
@@ -88,30 +96,36 @@ export default function ProfilePage() {
           background: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: 12, overflow: "hidden"
         }}>
-          {transactions.map((tx, idx) => (
-            <motion.div 
-              key={tx.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "16px 20px", borderBottom: idx === transactions.length - 1 ? "none" : "1px solid var(--border)",
-                background: "transparent"
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>{tx.desc}</div>
-                <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{tx.date}</div>
-              </div>
-              <div style={{ 
-                fontSize: 15, fontWeight: 800, 
-                color: tx.type === "bet" ? "var(--accent-no)" : "var(--accent-yes)" 
-              }}>
-                {tx.amount}
-              </div>
-            </motion.div>
-          ))}
+          {transactions.length === 0 ? (
+            <div style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 15 }}>
+              아직 내역이 없습니다. 첫 예측에 참여해 보세요!
+            </div>
+          ) : (
+            transactions.map((tx, idx) => (
+              <motion.div 
+                key={tx.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "16px 20px", borderBottom: idx === transactions.length - 1 ? "none" : "1px solid var(--border)",
+                  background: "transparent"
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>{tx.description}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{new Date(tx.created_at).toLocaleDateString()}</div>
+                </div>
+                <div style={{ 
+                  fontSize: 15, fontWeight: 800, 
+                  color: tx.amount < 0 ? "var(--accent-no)" : "var(--accent-yes)" 
+                }}>
+                  {tx.amount > 0 ? "+" : ""}{formatPoints(tx.amount)}P
+                </div>
+              </motion.div>
+            ))
+          )}
         </div>
 
       </main>
