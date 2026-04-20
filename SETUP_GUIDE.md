@@ -58,3 +58,17 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=당신의_SUPABASE_ANON_KEY
 ```
 
 **이제 세팅은 모두 끝났습니다!** 제가 작업해 둘 로그인 연동 코드와 함께 완벽히 구동될 것입니다.
+
+---
+
+## 5. Vercel(실서비스) 배포 및 연동 방법
+
+로컬에서 확인이 완료된 사이트를 전 세계에 공개(Deploy)하는 단계입니다.
+
+1. [Vercel](https://vercel.com/) 에 가입 및 로그인 후 [Add New Project]를 클릭합니다.
+2. 깃허브(GitHub) 계정을 연동하고 푸시된 저장소를 **Import** 합니다.
+3. 배포(Deploy) 세팅 화면에서 `Environment Variables` 항목을 열고, 로컬의 `.env.local` 에 기입했던 환경 변수 4개를 모두 복사해 한 번에 넣습니다.
+4. **Deploy** 버튼을 누르면 배포가 완료되고 라이브 도메인(예: `https://policat-theta.vercel.app`)이 발급됩니다.
+5. 발급된 도메인을 구글과 Supabase에 각각 추가 허용해주어야 로그인 에러가 발생하지 않습니다:
+   - **Google Cloud Console**: "승인된 자바스크립트 원본"에 해당 주소를, "승인된 리디렉션 URI"에 해당 주소 뒤에 `/auth/callback` 을 붙여서 각각 등록.
+   - **Supabase Dashboard**: Authentication > URL Configuration 메뉴의 "Site URL"을 해당 주소로 변경하고, "Redirect URLs"에는 해당 주소 뒤에 `/**` 를 붙여서 등록.
