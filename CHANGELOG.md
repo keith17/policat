@@ -5,6 +5,14 @@
 
 ---
 
+## [0.5.1] - 2026-04-26
+### 수정됨 (DB)
+- `point_transactions.type` check constraint에 `ad_reward` 추가
+  - Supabase SQL Editor에서 직접 실행
+  - 이제 `/profile/me` 광고 시청 보상이 정상 기록됨
+
+---
+
 ## [0.5.0] - 2026-04-26
 ### 완료
 - Vercel 프로덕션 배포 완료 (Issue #3 close)

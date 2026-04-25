@@ -25,7 +25,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ---
 
-## 📍 현재 상태 (as of 2026-04-26)
+## 📍 현재 상태 (as of 2026-04-26, 01:13 KST)
 
 ### ✅ 완료된 것
 | 항목 | 상태 | 비고 |
@@ -60,7 +60,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ### 🟡 발견된 버그 / 기술 부채
 | 항목 | 설명 | 해결 방법 |
 |------|------|----------|
-| `point_transactions` type enum에 `ad_reward` 없음 | `profile/me` 페이지에서 `ad_reward` 타입 INSERT 시도 → DB 제약 위반 가능 | Supabase에서 `type` 컬럼 check constraint에 `'ad_reward'` 추가 필요 |
+| ~~`point_transactions` type enum에 `ad_reward` 없음~~ | ✅ **수정 완료** - check constraint에 `ad_reward` 추가됨 | - |
 | 리더보드 `profiles.email`이 null일 경우 `.split('@')` 에러 | email이 없는 계정에서 crash | `p.email?.split('@')[0] \|\| '익명'` 처리 필요 |
 | `profile/[id]` 페이지 mock 데이터 | 타 유저 프로필이 하드코딩 | 추후 Supabase에서 실데이터 Pull 필요 |
 | `league/page.tsx` mock 데이터 | 리그 기능이 목 데이터 | 추후 구현 |
