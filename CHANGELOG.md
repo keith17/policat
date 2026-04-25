@@ -5,11 +5,27 @@
 
 ---
 
-## [Unreleased]
-### 수정 예정
-- Vercel 프로덕션 배포 및 환경변수 세팅 (#3)
-- Google AdSense 실제 광고 연동 (#4)
-- Supabase RLS 정책 강화 (#5)
+## [0.5.0] - 2026-04-26
+### 완료
+- Vercel 프로덕션 배포 완료 (Issue #3 close)
+- Google OAuth 프로덕션 도메인 리디렉션 URI 등록
+- Supabase Auth 프로덕션 URL 설정
+- `bets` INSERT 시 `markets.yes_pool`/`no_pool` 자동 업데이트 DB Trigger 실행 (Issue #6 close)
+
+### 문서
+- `AGENTS.md` CTO/CPO 마스터 문서로 전면 재작성 (에이전트 컨텍스트 없이도 즉시 투입 가능)
+- `ARCHITECTURE.md` DB 스키마 전체, RPC 함수, 런칭 체크리스트 추가
+- `CHANGELOG.md` 전체 버전 이력 신규 작성
+- `ISSUES.md` Issue #1, #2 완료 표시 / Issue #6, #7 신규 등록
+
+### 발견된 버그 (수정 필요)
+- `point_transactions.type` check constraint에 `ad_reward` 미포함 → INSERT 오류 가능
+- `leaderboard` 페이지 `p.email.split('@')` null 참조 에러 가능
+
+### 수정됨
+- `lib/data.ts`: `markets[]`, `leaderboard[]` Mock 데이터 복구 (Claude Design 복사 사고로 삭제됨)
+- `components/Navbar.tsx`: `xp` optional prop 추가
+- `app/page.tsx`: `markets as initialMarkets` import 제거, `useState<any[]>([])` 초기화
 
 ---
 

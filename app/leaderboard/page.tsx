@@ -35,7 +35,7 @@ export default function LeaderboardPage() {
         setLeaderboard(topProfiles.map((p, i) => ({
           id: p.id,
           rank: i + 1,
-          name: p.full_name || p.email.split("@")[0],
+          name: p.full_name || p.email?.split("@")[0] || '익명',
           email: p.email,
           xp: p.xp !== undefined ? p.xp : p.points,
           points: p.points,
