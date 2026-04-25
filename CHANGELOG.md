@@ -1,0 +1,87 @@
+# CHANGELOG
+
+이 파일은 PoliCat 프로젝트의 모든 주요 변경사항을 기록합니다.
+형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 따릅니다.
+
+---
+
+## [Unreleased]
+### 수정 예정
+- Vercel 프로덕션 배포 및 환경변수 세팅 (#3)
+- Google AdSense 실제 광고 연동 (#4)
+- Supabase RLS 정책 강화 (#5)
+
+---
+
+## [0.4.0] - 2026-04-21
+### 추가
+- `app/shop/page.tsx`: 포인트 상점 페이지 신규 생성
+  - 스타벅스, 네이버페이, GS25, 배달의민족 등 실물 쿠폰 교환 기능
+  - `shop_orders` 테이블에 주문 INSERT 및 `point_transactions` 내역 기록
+  - 포인트 차감 시 XP(경험치)는 유지되도록 분리 처리
+- `update_shop_orders.sql`: `shop_orders` 테이블 및 RLS 정책 추가
+  - 유저는 자신의 주문만 조회/생성 가능
+  - 관리자(koesig@gmail.com)는 전체 조회/수정 가능
+- `update_xp.sql`: `profiles` 테이블에 `xp` 컬럼 분리
+  - XP는 배당금 획득 시만 증가, 상점 구매 시 감소하지 않음
+  - 기존 유저 XP 백필(Backfill) 쿼리 포함
+  - `resolve_market` RPC 함수 업데이트: 배당금 지급 시 `points + xp` 동시 증가
+
+### 변경
+- `components/Navbar.tsx`: XP 기반 티어 표시 지원, `xp` prop 추가
+- `app/page.tsx`: 신규 가입자 프로필 로딩 시 `xp` fallback 처리
+
+---
+
+## [0.3.0] - 2026-04-21
+### 추가 (Polymarket 디자인 리팩토링 + Supabase 실데이터 연동)
+- `app/page.tsx` (홈): Supabase `markets` 테이블에서 실시간 데이터 Pull
+  - `active`, `pending` 상태 마켓만 필터링
+  - 유저별 베팅 내역 조회 후 `myBet` 필드 반영
+  - 베팅 시 `bets` INSERT + `profiles` 포인트 차감 + `point_transactions` 기록
+- `app/leaderboard/page.tsx`: Supabase `profiles`에서 XP 기준 Top 20 실시간 랭킹
+- `app/market/[id]/page.tsx`: 마켓 상세 페이지 Supabase 실데이터 연동
+  - 개별 마켓 베팅, 확률 계산, 차트 표시
+- `app/admin/page.tsx`: 어드민 패널 Supabase 실데이터 연동
+  - `profiles`, `markets`, `shop_orders` 테이블 관리
+  - `resolve_market`, `refund_market` RPC 호출 버튼
+- `app/profile/me/page.tsx`: 내 프로필 Supabase 실데이터 연동
+  - 내 베팅 내역, `point_transactions` 이력 표시
+- `lib/data.ts`: Mock 마켓 데이터 제거, 유틸 함수(`tierConfig`, `getTier`, `formatPoints`, `formatDate`)만 유지
+
+### 변경
+- 전체 UI: 다크 모드(Polymarket 스타일 금융 터미널) 디자인으로 통일
+- `components/Navbar.tsx`: 라이트 → 다크 테마로 변경
+
+---
+
+## [0.2.0] - 2026-04-20
+### 추가
+- `app/earn/page.tsx`: 포인트 획득 페이지
+  - 광고 시청(시뮬레이션), 일일 출석 체크, 친구 초대 링크 복사
+- `components/AdBanner.tsx`: 광고 배너 컴포넌트 (더미 배너, AdVideoReward 포함)
+- `components/AdRewardModal.tsx`: 광고 시청 모달 (5초 카운트다운 후 보상 지급)
+- `app/admin/page.tsx`: 관리자 대시보드
+  - 마켓 결과 판정(YES/NO), 환불 기능
+  - `rpc_settlement.sql` RPC 함수 연동
+- `rpc_settlement.sql`: Supabase `resolve_market`, `refund_market` RPC 함수
+  - 원자적(Atomic) 트랜잭션으로 배당금 분배
+  - 패배자 포인트 미차감, 승리자에게 풀 배당
+
+---
+
+## [0.1.0] - 2026-04-16
+### 최초 생성
+- Next.js 15 (App Router), TypeScript, Tailwind CSS, Framer Motion 기반 프로젝트 초기화
+- Supabase 연동 (`profiles`, `markets`, `bets`, `point_transactions` 테이블)
+- Google OAuth 로그인 (Supabase Auth)
+- `supabase_init.sql`: DB 스키마 및 기본 RLS 정책
+- `app/page.tsx`: 메인 홈 화면 (마켓 목록, 베팅 모달)
+- `app/leaderboard/page.tsx`: 랭킹 페이지
+- `app/league/page.tsx`: 예측 리그 페이지 (목 데이터)
+- `app/guide/page.tsx`: 이용 가이드 페이지
+- `app/tos/page.tsx`: 이용 약관 페이지
+- `app/profile/me/page.tsx`: 내 프로필 페이지
+- `components/Navbar.tsx`: 상단 네비게이션바
+- `components/MarketCard.tsx`: 마켓 카드 컴포넌트
+- `SETUP_GUIDE.md`: Vercel 배포 가이드 문서

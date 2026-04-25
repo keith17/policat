@@ -1,37 +1,63 @@
 # Policat 런칭 전 잔여 할 일 (GitHub Issues)
 
-현재까지 프론트엔드의 화면 레이아웃, 로그인 체계, 그리고 뼈대 역할을 할 백엔드 DB 구조가 완성되었습니다. 완전한 실 서비스 런칭을 위해 반드시 구현해야 하는 구체적인 테크니컬 이슈들입니다. 이 목록을 GitHub Issues에 그대로 등록해 주시면 좋습니다.
+현재까지 프론트엔드의 화면 레이아웃, 로그인 체계, Supabase 실데이터 연동, 정산 RPC 로직이 완성되었습니다.
+완전한 실 서비스 런칭을 위해 반드시 구현해야 하는 남은 이슈들입니다.
 
 ---
 
-## 🚀 Issue 1: Supabase 백엔드 ↔ 프론트엔드 실시간 연동 (CRUD) 
-- **설명**: 현재 UI(마켓 카드, 리더보드, 프로필 정보, 어드민 패널 등)가 프론트엔드 모의 데이터(`lib/data.ts` 및 컴포넌트 내부 State)로 구동되고 있습니다. 
-- **할 일**:
-  - [ ] `@/utils/supabase` 훅이나 Next.js Server Actions를 사용해 `markets`, `bets`, `profiles` 테이블의 데이터를 실제로 Pull.
-  - [ ] 베팅(참여) 버튼 클릭 시 `bets` 테이블에 `INSERT` 치기 (Supabase).
-  - [ ] 어드민 패널 상태가 Mock 배열이 아니라 실제 `profiles`와 `markets`를 불러오게 수정.
+## ✅ Issue 1: Supabase 백엔드 ↔ 프론트엔드 실시간 연동 (CRUD) — **완료**
+- [x] `markets`, `bets`, `profiles` 테이블의 데이터를 실제로 Pull
+- [x] 베팅 버튼 클릭 시 `bets` 테이블에 INSERT
+- [x] 어드민 패널이 실제 `profiles`, `markets`, `shop_orders` 데이터를 불러오게 수정
+- [x] 리더보드가 `profiles.xp` 기준으로 실시간 랭킹 표시
 
-## 🚀 Issue 2: 결과 판정 및 포인트 자동 정산(Settlement) 로직 
-- **설명**: 어드민이 마켓 결과(YES/NO/환불)를 선언했을 때 사용자들에게 포인트를 실제로 나눠주는 백엔드 트랜잭션 함수가 필요합니다.
-- **할 일**:
-  - [ ] 마감된 마켓의 경우, 총 YES 배당률과 총 NO 배당률을 계산하여 승리한 자들의 비율에 맞게 `profiles`의 밸런스 값을 업데이트.
-  - [ ] 해당 내역을 `point_transactions` 테이블에 `INSERT` 하여, 유저가 마이페이지에서 내역을 열람할 수 있도록 지원.
+---
+
+## ✅ Issue 2: 결과 판정 및 포인트 자동 정산(Settlement) 로직 — **완료**
+- [x] `resolve_market` RPC: 승리자 비율에 따라 `profiles.points` + `xp` 원자적 분배
+- [x] `refund_market` RPC: 전액 환불 처리
+- [x] `point_transactions` 테이블에 내역 INSERT
+- [x] 어드민 패널에서 버튼 클릭으로 RPC 호출 가능
+
+---
 
 ## 🚀 Issue 3: 환경 변수 세팅 및 Vercel 최종 배포
-- **설명**: 지금까지 로컬환경(`localhost:3004`)용으로만 세팅된 환경을 프로덕션 도메인으로 이관해야 합니다.
+- **설명**: 로컬환경(`localhost:3004`)용으로만 세팅된 환경을 프로덕션 도메인으로 이관해야 합니다.
 - **할 일**:
-  - [ ] Vercel 플랫폼에 해당 Git Repository 연결 후 배포 (Deploy).
-  - [ ] Vercel Server Settings에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` 등 입력.
-  - [ ] 구글 클라우드 콘솔(OAuth) 사이트에서 **승인된 리디렉션 URI**를 Vercel 앱 도메인(`https://your-domain.vercel.app/auth/callback`)으로 추가.
+  - [ ] Vercel 플랫폼에 GitHub Repository 연결 후 배포
+  - [ ] Vercel 환경변수에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` 입력
+  - [ ] 구글 클라우드 콘솔에서 **승인된 리디렉션 URI**를 Vercel 도메인으로 추가
+
+---
 
 ## 🚀 Issue 4: 포인트 획득(배너/동영상 리워드) 광고 연동
-- **설명**: 유저가 베팅을 하려면 포인트가 필요한데, 초기 포인트 소진 후엔 광고를 봐야 합니다. (`app/earn/page.tsx` 연동)
+- **설명**: 현재 광고 시청은 5초 카운트다운 시뮬레이션만 구현되어 있습니다.
 - **할 일**:
-  - [ ] 구글 애드센스(또는 다른 광고 벤더의 리워드 동영상 모듈) 스크립트 사이트에 삽입.
-  - [ ] 동영상 시청 완료 시 프론트엔드로 `callback`을 받아, 백엔드 `profiles` 포인트 총량을 500P 가량 `ADD` 해주는 서버 유틸 작성.
+  - [ ] 구글 애드센스 또는 AdMob 리워드 비디오 스크립트 삽입
+  - [ ] 광고 시청 완료 시 서버에서 `profiles.points` 차감 없이 +포인트 처리하는 보안 API Route 구현
+  - [ ] `point_transactions`에 `ad_watch` 타입으로 기록
+
+---
 
 ## 🚀 Issue 5: Supabase 보안(RLS) 룰 고도화
-- **설명**: 현재 `supabase_init.sql`에 작성된 보안 룰은 베타테스트/개발 속도를 위해 매우 느슨하게(Public Read) 열려있습니다.
+- **설명**: 현재 RLS가 개발 속도를 위해 느슨하게 열려있습니다.
 - **할 일**:
-  - [ ] Supabase 콘솔에서 `bets`나 `point_transactions` 테이블 열람/생성을 엄격하게 본인의 세션(id)에만 허용되도록 SQL Policy 강화. 
-  - [ ] 어드민 전용 Policy를 더 명확하게 작성하여 악의적인 접근 원천 차단.
+  - [ ] `bets` 테이블: INSERT 시 본인 user_id만 허용 (현재 완료), SELECT는 본인 것만 허용으로 강화
+  - [ ] `point_transactions`: SELECT/INSERT 모두 본인 세션에만 허용
+  - [ ] 어드민 전용 Policy를 JWT email 기반이 아닌 `profiles.is_admin = true` 기반으로 통일
+
+---
+
+## 🚀 Issue 6: `markets.yes_pool` / `no_pool` 자동 업데이트 (신규)
+- **설명**: 현재 베팅 시 `bets` 테이블에만 INSERT되고, `markets`의 `yes_pool`/`no_pool`은 자동 업데이트가 안 됩니다. 확률 계산이 부정확합니다.
+- **할 일**:
+  - [ ] Supabase DB Trigger: `bets` INSERT 시 `markets.yes_pool` 또는 `no_pool` 자동 `+amount` 처리
+  - [ ] 또는 베팅 시 Server Action에서 `markets` UPDATE 호출
+
+---
+
+## 🚀 Issue 7: 마켓 생성 페이지 어드민 전용 접근 제한 (신규)
+- **설명**: `/create` 페이지가 현재 모든 로그인 유저에게 열려있습니다.
+- **할 일**:
+  - [ ] `/create` 페이지에서 `profiles.is_admin` 체크 후 비어드민 접근 차단
+  - [ ] `markets` 테이블 INSERT RLS Policy를 어드민 전용으로 수정
