@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" data-theme="light" data-accent="cobalt" data-density="comfy">
       <body>{children}</body>
     </html>
   );

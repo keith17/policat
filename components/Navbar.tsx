@@ -33,7 +33,6 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -47,9 +46,7 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
   const handleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   };
 
@@ -73,7 +70,7 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
       background: "var(--bg-secondary)",
-      borderBottom: "1px solid var(--border)",
+      boxShadow: "var(--shadow-sm)",
     }}>
       <div style={{
         maxWidth: 1200, margin: "0 auto",
@@ -86,12 +83,10 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
           <div style={{ width: 38, height: 38 }}>
             <img src="/logo.svg" alt="Policat" width={38} height={38} />
           </div>
-          <div>
-            <span style={{
-              fontSize: 22, fontWeight: 900,
-              color: "var(--text-primary)", letterSpacing: "-0.04em"
-            }}>Policat</span>
-          </div>
+          <span style={{
+            fontSize: 22, fontWeight: 700,
+            color: "var(--text-primary)", letterSpacing: "-0.04em"
+          }}>Policat</span>
         </Link>
 
         {/* Center Nav */}
@@ -100,19 +95,15 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
             const isActive = pathname === href;
             return (
               <Link key={href} href={href} style={{
-                color: isActive ? "var(--text-primary)" : "var(--text-secondary)", 
+                color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
                 textDecoration: "none",
-                padding: "8px 14px", borderRadius: 6,
-                fontSize: 15, fontWeight: isActive ? 800 : 600,
-                transition: "all 0.1s",
-                background: isActive ? "var(--bg-card-hover)" : "transparent"
+                padding: "8px 14px", borderRadius: "var(--radius-sm)",
+                fontSize: 14, fontWeight: isActive ? 700 : 500,
+                transition: "all 0.15s",
+                background: isActive ? "var(--surface-alt)" : "transparent"
               }}
-                onMouseEnter={e => {
-                  if (!isActive) e.currentTarget.style.color = "var(--text-primary)";
-                }}
-                onMouseLeave={e => {
-                  if (!isActive) e.currentTarget.style.color = "var(--text-secondary)";
-                }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--surface-alt)"; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
               >
                 {label}
               </Link>
@@ -126,48 +117,50 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
             <>
               {/* Streak */}
               {streak > 0 && (
-                <div className="streak-active hidden-mobile" style={{
-                  background: "rgba(245, 158, 11, 0.15)",
-                  border: "1px solid rgba(245, 158, 11, 0.3)",
-                  borderRadius: 8, padding: "4px 10px",
+                <div className="hidden-mobile" style={{
+                  background: "var(--accent-gold-soft)",
+                  borderRadius: "var(--radius-sm)", padding: "4px 10px",
                   display: "flex", alignItems: "center", gap: 4,
-                  fontSize: 13, fontWeight: 700, color: "#f59e0b"
+                  fontSize: 13, fontWeight: 700, color: "var(--accent-gold)"
                 }}>
-                  🔥 {streak}
+                  🔥 <span style={{ fontFamily: "var(--font-mono)" }}>{streak}</span>
                 </div>
               )}
+
               {/* Points */}
               <Link href="/profile/me" style={{ textDecoration: "none" }} className="hidden-mobile">
                 <motion.div
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.03 }}
                   style={{
-                    background: "var(--bg-secondary)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 6, padding: "6px 12px",
+                    background: "var(--surface-alt)",
+                    borderRadius: "var(--radius-sm)", padding: "6px 12px",
                     display: "flex", alignItems: "center", gap: 8,
                   }}
                 >
                   <span style={{ fontSize: 14 }}>{tierInfo.emoji}</span>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)" }}>
+                    <div style={{
+                      fontSize: 13, fontWeight: 700, color: "var(--text-primary)",
+                      fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums"
+                    }}>
                       {formatPoints(points)}
                     </div>
-                    <div style={{ fontSize: 10, color: tierInfo.color, lineHeight: 1, fontWeight: 700 }}>
+                    <div style={{ fontSize: 10, color: tierInfo.color, lineHeight: 1, fontWeight: 600 }}>
                       {tierInfo.label}
                     </div>
                   </div>
                 </motion.div>
               </Link>
 
-              {/* Profile Dropdown Container */}
+              {/* Profile Dropdown */}
               <div style={{ position: "relative" }} ref={dropdownRef}>
-                <button 
+                <button
                   onClick={() => setProfileDropdown(!profileDropdown)}
                   style={{
-                    background: "transparent", border: "1px solid var(--border)",
-                    borderRadius: "50%", width: 38, height: 38,
+                    background: "var(--surface-alt)", border: "none",
+                    borderRadius: "var(--radius-pill)", width: 38, height: 38,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", color: "var(--text-secondary)"
+                    cursor: "pointer", color: "var(--text-secondary)", overflow: "hidden"
                   }}
                   title="프로필 메뉴"
                 >
@@ -178,42 +171,49 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
                   )}
                 </button>
 
-                {/* Dropdown Menu */}
                 <AnimatePresence>
                   {profileDropdown && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
                       style={{
                         position: "absolute", top: 48, right: 0,
-                        width: 220, background: "var(--bg-secondary)",
-                        border: "1px solid var(--border)", borderRadius: 8,
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                        width: 220, background: "var(--bg-card)",
+                        borderRadius: "var(--radius-md)",
+                        boxShadow: "var(--shadow-lg)",
                         overflow: "hidden", zIndex: 1000
                       }}
                     >
-                      <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
-                        <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>로그인 됨</div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>로그인 됨</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {user.user_metadata?.full_name || user.email}
                         </div>
                       </div>
-                      <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-                        <Link href="/profile/me" onClick={() => setProfileDropdown(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", textDecoration: "none", color: "var(--text-primary)", borderRadius: 8, fontSize: 14, fontWeight: 600 }}>
+                      <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 2 }}>
+                        <Link href="/profile/me" onClick={() => setProfileDropdown(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", textDecoration: "none", color: "var(--text-primary)", borderRadius: "var(--radius-sm)", fontSize: 14, fontWeight: 500 }}
+                          onMouseEnter={e => e.currentTarget.style.background = "var(--surface-alt)"}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                           <FileText size={16} /> 내 정보 및 내역
                         </Link>
-                        <Link href="/create" onClick={() => setProfileDropdown(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", textDecoration: "none", color: "var(--purple-primary)", borderRadius: 8, fontSize: 14, fontWeight: 600, background: "rgba(139, 92, 246, 0.05)" }}>
+                        <Link href="/create" onClick={() => setProfileDropdown(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", textDecoration: "none", color: "var(--accent)", borderRadius: "var(--radius-sm)", fontSize: 14, fontWeight: 500, background: "var(--accent-soft)" }}
+                          onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+                          onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
                           <PlusCircle size={16} /> 마켓 제안하기
                         </Link>
                         {user.email === "koesig@gmail.com" && (
-                          <Link href="/admin" onClick={() => setProfileDropdown(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", textDecoration: "none", color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 13, fontWeight: 700, background: "var(--bg-secondary)", marginTop: 4 }}>
+                          <Link href="/admin" onClick={() => setProfileDropdown(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", textDecoration: "none", color: "var(--text-secondary)", borderRadius: "var(--radius-sm)", fontSize: 13, fontWeight: 500 }}
+                            onMouseEnter={e => e.currentTarget.style.background = "var(--surface-alt)"}
+                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                             <Settings size={16} /> 관리자 패널
                           </Link>
                         )}
                         <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "4px 0" }} />
-                        <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "none", border: "none", color: "var(--text-secondary)", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", width: "100%", textAlign: "left" }}>
+                        <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "none", border: "none", color: "var(--text-muted)", borderRadius: "var(--radius-sm)", fontSize: 14, fontWeight: 500, cursor: "pointer", width: "100%", textAlign: "left" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-alt)")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                           <LogOut size={16} /> 로그아웃
                         </button>
                       </div>
@@ -226,19 +226,15 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleLogin}
-              style={{
-                background: "var(--purple-primary)",
-                color: "white", padding: "8px 16px", borderRadius: 6,
-                fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 6
-              }}
+              className="btn-primary"
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
             >
               <LogIn size={16} /> 로그인
             </motion.button>
           )}
 
-          {/* Mobile Hamburger toggle */}
-          <button 
+          {/* Mobile Hamburger */}
+          <button
             className="mobile-only"
             onClick={() => setMenuOpen(!menuOpen)}
             style={{
@@ -252,18 +248,14 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            style={{
-              overflow: "hidden",
-              background: "var(--bg-secondary)",
-              borderBottom: "1px solid var(--border)"
-            }}
+            style={{ overflow: "hidden", background: "var(--bg-card)", boxShadow: "var(--shadow-md)" }}
           >
             <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
               {user && (
@@ -274,29 +266,26 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 16 }}>{tierInfo.emoji}</span>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
                         {formatPoints(points)}
                       </div>
-                      <div style={{ fontSize: 11, color: tierInfo.color, fontWeight: 600 }}>
-                        {tierInfo.label}
-                      </div>
+                      <div style={{ fontSize: 11, color: tierInfo.color, fontWeight: 600 }}>{tierInfo.label}</div>
                     </div>
                   </div>
                   {streak > 0 && (
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b" }}>🔥 {streak}일 달성</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--accent-gold)" }}>🔥 {streak}일</div>
                   )}
                 </div>
               )}
-              
               {navLinks.map(({ href, label }) => {
                 const isActive = pathname === href;
                 return (
-                  <Link key={href} href={href} 
+                  <Link key={href} href={href}
                     onClick={() => setMenuOpen(false)}
                     style={{
-                      color: isActive ? "var(--purple-primary)" : "var(--text-primary)", 
+                      color: isActive ? "var(--accent)" : "var(--text-primary)",
                       textDecoration: "none",
-                      padding: "12px 0", fontSize: 16, fontWeight: isActive ? 800 : 600,
+                      padding: "12px 0", fontSize: 16, fontWeight: isActive ? 700 : 500,
                     }}
                   >
                     {label}

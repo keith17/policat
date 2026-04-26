@@ -1,207 +1,35 @@
-@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+/* ============================================================================
+   Policat — globals.css
+   Imports the design system tokens + components.
+   All colour, spacing, radius, shadow decisions live in design-system/.
+   ============================================================================ */
+
+@import '../design-system/tokens.css';
+@import '../design-system/components.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- Legacy aliases (used in existing components) ------------------ */
+/* Keep until all inline styles are ported to the new tokens */
 :root {
-  --bg-primary: #fdfdfd;
-  --bg-secondary: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f7f7f7;
-  --border: #e6e6e6;
-  --border-hover: #cccccc;
-  
-  --text-primary: #1a1a1a;
-  --text-secondary: #666666;
-  --text-muted: #999999;
-  
-  --purple-primary: #000000;
-  --purple-light: #333333;
-  --purple-dark: #000000;
-  
-  /* Polymarket style Yes/No */
-  --accent-yes: #2E73F8; /* Bright Blue */
-  --accent-no: #E34A51;  /* Red/Pink */
-  --accent-gold: #FFB800;
-  
-  --gradient-primary: var(--purple-primary);
+  --purple-primary: var(--accent);
+  --purple-light:   var(--accent-soft);
+  --purple-dark:    var(--ink);
+  --gradient-primary: var(--accent);
   --gradient-yes: var(--accent-yes);
-  --gradient-no: var(--accent-no);
+  --gradient-no:  var(--accent-no);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ---------- Legacy class aliases ----------------------------------------- */
+.animated-bg  { background: var(--bg-primary); }
+.gradient-text { color: var(--text-primary); }
 
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  min-height: 100vh;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-secondary); }
-::-webkit-scrollbar-thumb { background: #dddddd; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #bbbbbb; }
-
-/* Clean flat card */
-.glass-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}
-
-.glass-card:hover {
-  border-color: var(--border-hover);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-}
-
-.gradient-text {
-  color: var(--text-primary);
-}
-
-.animated-bg {
-  background: var(--bg-primary);
-}
-
-/* Progress bar */
-.progress-yes {
-  background: var(--accent-yes);
-  height: 6px;
-  border-radius: 3px;
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.progress-no {
-  background: var(--accent-no);
-  height: 6px;
-  border-radius: 3px;
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Bet button */
-.btn-yes {
-  background: var(--accent-yes);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 12px 24px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.1s ease;
-  font-size: 15px;
-}
-
-.btn-yes:hover {
-  background: #1B5DE3;
-}
-
-.btn-no {
-  background: var(--accent-no);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 12px 24px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.1s ease;
-  font-size: 15px;
-}
-
-.btn-no:hover {
-  background: #C7383E;
-}
-
-.btn-primary {
-  background: var(--purple-primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 12px 24px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.1s ease;
-}
-
-.btn-primary:hover {
-  background: var(--purple-light);
-}
-
-/* Tag */
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  background: #f1f1f1;
-  color: var(--text-secondary);
-  border: 1px solid #e1e1e1;
-}
-
-.tag-economy, .tag-politics, .tag-society, .tag-sports {
-  background: #f7f7f7;
-  color: var(--text-secondary);
-  border: 1px solid #eeeeee;
-}
-
-/* Tier badge */
-.tier-rookie { color: #94a3b8; }
-.tier-predictor { color: #22d3a0; }
-.tier-analyst { color: #60a5fa; }
-.tier-strategist { color: #c084fc; }
-.tier-oracle { color: #f59e0b; }
-
-/* Ad container */
-.ad-container {
-  background: #f9f9f9;
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.ad-label {
-  position: absolute;
-  top: 6px;
-  right: 10px;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-/* Pulse dot */
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.8); }
-}
-
-.pulse-dot {
-  animation: pulse-dot 1.5s infinite;
-}
-
-.mobile-only {
-  display: none !important;
-}
-
-@media (max-width: 768px) {
-  .hidden-mobile { display: none !important; }
-  .mobile-only { display: block !important; }
+/* streak active badge */
+.streak-active {
+  background: var(--accent-gold-soft);
+  border-radius: var(--radius-sm);
+  color: var(--accent-gold);
+  font-weight: var(--fw-semi);
 }

@@ -1,0 +1,192 @@
+/* ============================================================================
+   Policat Design System — Tokens
+   v2.0 · Off-white warm + tonal surfaces
+   --------------------------------------------------------------------------
+   Drop this into your Next.js project as `app/globals.css` (or import from
+   one). All component CSS below depends on these custom properties.
+
+   Tweakable axes:
+     - data-theme="light" | "dark"
+     - data-accent="cobalt" | "emerald" | "lemon" | "rose"  (default cobalt)
+     - data-density="comfy" | "compact"                      (default comfy)
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* ---------- Base (light, cobalt accent, comfy) -------------------------- */
+:root,
+:root[data-theme="light"] {
+  /* Surfaces */
+  --bg-primary:     #FAFAF7;   /* page */
+  --bg-secondary:   #FFFFFF;   /* surface */
+  --bg-card:        #FFFFFF;   /* card */
+  --bg-card-hover:  #F4F3EE;
+  --surface-alt:    #F4F3EE;   /* tonal layer (chips, soft buttons) */
+  --surface-sunk:   #F0EFE9;   /* sunken inputs */
+
+  /* Borders — kept available, used sparingly */
+  --border:         #ECEAE3;
+  --border-hover:   #D9D6CC;
+  --border-strong:  #D9D6CC;
+
+  /* Text */
+  --text-primary:   #14141A;
+  --text-secondary: #6B6A66;
+  --text-muted:     #A09E97;
+
+  /* Ink (primary action surface) */
+  --ink:            #14141A;
+  --ink-soft:       #2A2A30;
+
+  /* YES / NO */
+  --accent-yes:      #1652F0;
+  --accent-yes-soft: #E4ECFE;
+  --accent-no:       #FF5E5B;
+  --accent-no-soft:  #FEE7E5;
+
+  /* Accent (default cobalt) — used for highlights, tier rings, links */
+  --accent:          #1652F0;
+  --accent-soft:     #E4ECFE;
+  --accent-ink:      #FFFFFF;   /* text on accent fill */
+
+  /* Reward / streak */
+  --accent-gold:      #F5B544;
+  --accent-gold-soft: #FBEFD4;
+
+  /* Trend */
+  --up:   #00B074;
+  --down: #FF5E5B;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* Shadows — ink-tinted, soft */
+  --shadow-sm: 0 1px 2px rgba(20,20,26,0.04);
+  --shadow-md: 0 4px 16px rgba(20,20,26,0.06);
+  --shadow-lg: 0 8px 24px rgba(20,20,26,0.08);
+  --shadow-xl: 0 12px 32px rgba(20,20,26,0.10);
+
+  /* Spacing scale (use these names, not raw px, in components) */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Type scale */
+  --font-sans: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-15: 15px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-20: 20px;
+  --fs-24: 24px;
+  --fs-28: 28px;
+  --fs-32: 32px;
+
+  /* Weight ceiling: 700. Never go higher. */
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semi:    600;
+  --fw-bold:    700;
+}
+
+/* ---------- Dark theme --------------------------------------------------- */
+:root[data-theme="dark"] {
+  --bg-primary:     #0E0E12;
+  --bg-secondary:   #15151B;
+  --bg-card:        #15151B;
+  --bg-card-hover:  #1C1C24;
+  --surface-alt:    #1C1C24;
+  --surface-sunk:   #0A0A0E;
+
+  --border:         #232330;
+  --border-hover:   #2E2E3D;
+  --border-strong:  #2E2E3D;
+
+  --text-primary:   #F4F3EE;
+  --text-secondary: #9B9A93;
+  --text-muted:     #5C5B57;
+
+  --ink:            #F4F3EE;
+  --ink-soft:       #D9D6CC;
+  --accent-ink:     #14141A;
+
+  --accent-yes:      #4F7CFF;
+  --accent-yes-soft: rgba(79,124,255,0.18);
+  --accent-no:       #FF7770;
+  --accent-no-soft:  rgba(255,119,112,0.18);
+
+  --accent:          #4F7CFF;
+  --accent-soft:     rgba(79,124,255,0.18);
+
+  --accent-gold:      #F5B544;
+  --accent-gold-soft: rgba(245,181,68,0.16);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.6);
+  --shadow-xl: 0 12px 32px rgba(0,0,0,0.7);
+}
+
+/* ---------- Accent variants --------------------------------------------- */
+:root[data-accent="emerald"] {
+  --accent:      #00B074;
+  --accent-soft: rgba(0,176,116,0.14);
+  --accent-yes:  #00B074;  --accent-yes-soft: rgba(0,176,116,0.14);
+}
+:root[data-accent="lemon"] {
+  --accent:      #E8FF4F;
+  --accent-soft: rgba(232,255,79,0.18);
+  --accent-ink:  #14141A;
+}
+:root[data-accent="rose"] {
+  --accent:      #FF4F6E;
+  --accent-soft: rgba(255,79,110,0.14);
+}
+
+/* ---------- Density ------------------------------------------------------ */
+:root[data-density="compact"] {
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 20px;
+  --space-8: 24px;
+}
+
+/* ---------- Base reset --------------------------------------------------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-feature-settings: 'ss01', 'tnum';
+  letter-spacing: -0.01em;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5 { font-weight: var(--fw-semi); letter-spacing: -0.02em; }
+
+.tnum  { font-variant-numeric: tabular-nums; }
+.mono  { font-family: var(--font-mono); }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }

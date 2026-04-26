@@ -27,23 +27,14 @@ interface MarketCardProps {
   index: number;
 }
 
-const categoryColors: Record<string, string> = {
-  economy: "#f59e0b",
-  politics: "#a78bfa",
-  society: "#22d3a0",
-  sports: "#f43f5e",
-};
-
 export default function MarketCard({ market, onBet, userPoints, index }: MarketCardProps) {
-  const catColor = categoryColors[market.category] || "#9090b0";
-
   return (
     <motion.div
       className="glass-card"
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.4 }}
-      style={{ padding: 20, position: "relative", overflow: "hidden" }}
+      transition={{ delay: index * 0.06, duration: 0.35 }}
+      style={{ padding: 20, position: "relative", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}
     >
       {/* Header badges */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
@@ -52,21 +43,20 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
         </span>
         {market.hot && (
           <span style={{
-            background: "rgba(244,63,94,0.15)", color: "#f43f5e",
-            border: "1px solid rgba(244,63,94,0.3)",
-            borderRadius: 100, padding: "3px 8px", fontSize: 11, fontWeight: 700
+            background: "var(--accent-no-soft)", color: "var(--accent-no)",
+            borderRadius: "var(--radius-pill)", padding: "3px 8px", fontSize: 11, fontWeight: 600
           }}>🔥 HOT</span>
         )}
         {market.new && (
           <span style={{
-            background: "rgba(46,115,248,0.1)", color: "var(--accent-yes)",
-            border: "1px solid rgba(46,115,248,0.2)",
-            borderRadius: 100, padding: "3px 8px", fontSize: 11, fontWeight: 700
+            background: "var(--accent-yes-soft)", color: "var(--accent-yes)",
+            borderRadius: "var(--radius-pill)", padding: "3px 8px", fontSize: 11, fontWeight: 600
           }}>✨ NEW</span>
         )}
         <span style={{
           marginLeft: "auto", color: "var(--text-muted)", fontSize: 12,
-          display: "flex", alignItems: "center", gap: 4
+          display: "flex", alignItems: "center", gap: 4,
+          fontFamily: "var(--font-mono)"
         }}>
           ⏰ {market.daysLeft > 0 ? `${market.daysLeft}일 남음` : "종료"}
         </span>
@@ -75,11 +65,11 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
       {/* Title */}
       <Link href={`/market/${market.id}`} style={{ textDecoration: "none" }}>
         <h3 style={{
-          fontSize: 16, fontWeight: 700, color: "var(--text-primary)",
+          fontSize: 16, fontWeight: 600, color: "var(--text-primary)",
           marginBottom: 16, lineHeight: 1.5,
-          transition: "color 0.2s"
+          transition: "color 0.15s"
         }}
-          onMouseEnter={e => (e.currentTarget.style.color = "var(--purple-primary)")}
+          onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
           onMouseLeave={e => (e.currentTarget.style.color = "var(--text-primary)")}
         >
           {market.title}
@@ -89,14 +79,20 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
       {/* Probability Bar */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-          <span style={{ color: "var(--accent-yes)", fontWeight: 800, fontSize: 22 }}>
+          <span style={{
+            color: "var(--accent-yes)", fontWeight: 700, fontSize: 22,
+            fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums"
+          }}>
             {market.yesProb}<span style={{ fontSize: 13 }}>%</span>
           </span>
-          <span style={{ color: "var(--accent-no)", fontWeight: 800, fontSize: 22 }}>
+          <span style={{
+            color: "var(--accent-no)", fontWeight: 700, fontSize: 22,
+            fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums"
+          }}>
             {market.noProb}<span style={{ fontSize: 13 }}>%</span>
           </span>
         </div>
-        <div style={{ display: "flex", gap: 3, height: 8, borderRadius: 4, overflow: "hidden" }}>
+        <div style={{ display: "flex", gap: 3, height: 6, borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
           <motion.div
             className="progress-yes"
             style={{ width: `${market.yesProb}%` }}
@@ -113,34 +109,41 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
           />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-          <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>YES</span>
-          <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>NO</span>
+          <span style={{ color: "var(--text-muted)", fontSize: 11 }}>YES</span>
+          <span style={{ color: "var(--text-muted)", fontSize: 11 }}>NO</span>
         </div>
       </div>
 
       {/* Stats */}
       <div style={{
         display: "flex", gap: 16, marginBottom: 16,
-        borderTop: "1px solid var(--border)",
-        paddingTop: 12, color: "var(--text-muted)", fontSize: 12
+        paddingTop: 12, color: "var(--text-muted)", fontSize: 12,
+        borderTop: "1px solid var(--border)"
       }}>
-        <span>💰 총 {(market.totalVolume / 1000).toFixed(0)}K P</span>
+        <span style={{ fontFamily: "var(--font-mono)" }}>
+          💰 총 {(market.totalVolume / 1000).toFixed(0)}K P
+        </span>
         <span>👥 {market.participants.toLocaleString()}명</span>
       </div>
 
       {/* Bet Buttons */}
       {market.myBet ? (
         <div style={{
-          padding: "12px",
-          background: "var(--bg-secondary)",
-          borderRadius: 6, border: `1px solid ${market.myBet === "yes" ? "var(--accent-yes)" : "var(--accent-no)"}`,
+          padding: 12,
+          background: "var(--surface-alt)",
+          borderRadius: "var(--radius-md)",
           display: "flex", flexDirection: "column", gap: 6
         }}>
-          <div style={{ color: market.myBet === "yes" ? "var(--accent-yes)" : "var(--accent-no)", fontWeight: 700, fontSize: 13, textAlign: "center" }}>
-            ✓ {market.myBet === "yes" ? "YES" : "NO"}에 {market.myBetAmount}P 참여 완료
+          <div style={{
+            color: market.myBet === "yes" ? "var(--accent-yes)" : "var(--accent-no)",
+            fontWeight: 600, fontSize: 13, textAlign: "center"
+          }}>
+            ✓ {market.myBet === "yes" ? "YES" : "NO"}에{" "}
+            <span style={{ fontFamily: "var(--font-mono)" }}>{market.myBetAmount}P</span> 참여 완료
           </div>
-          <div style={{ fontSize: 13, color: "var(--text-secondary)", textAlign: "center", background: "var(--bg-card)", padding: "6px", borderRadius: 6 }}>
-            적중 시 예상 수익: <span style={{ fontWeight: 800, color: market.myBet === "yes" ? "var(--accent-yes)" : "var(--accent-no)" }}>
+          <div style={{ fontSize: 13, color: "var(--text-secondary)", textAlign: "center", background: "var(--bg-card)", padding: "6px", borderRadius: "var(--radius-sm)" }}>
+            적중 시 예상:{" "}
+            <span style={{ fontWeight: 700, color: market.myBet === "yes" ? "var(--accent-yes)" : "var(--accent-no)", fontFamily: "var(--font-mono)" }}>
               {Math.round((market.myBetAmount || 0) * (100 / (market.myBet === "yes" ? market.yesProb : market.noProb)))}P
             </span>
           </div>
@@ -150,7 +153,7 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
           <motion.button
             className="btn-yes"
             style={{ flex: 1 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => onBet(market.id, "yes", 50)}
           >
             📈 YES
@@ -158,7 +161,7 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
           <motion.button
             className="btn-no"
             style={{ flex: 1 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => onBet(market.id, "no", 50)}
           >
             📉 NO
@@ -167,18 +170,9 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
       )}
 
       {/* Share */}
-      <motion.button
-        whileTap={{ scale: 0.97 }}
-        style={{
-          width: "100%", marginTop: 8,
-          background: "var(--bg-card-hover)",
-          border: "1px solid var(--border)",
-          borderRadius: 6, padding: "8px",
-          color: "var(--text-secondary)", fontSize: 12, cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-          transition: "all 0.2s"
-        }}
-        onHoverStart={e => {}}
+      <button
+        className="btn-soft"
+        style={{ width: "100%", marginTop: 8, fontSize: 12, padding: "8px" }}
         onClick={() => {
           const text = `폴리캣 마켓: "${market.title}"\nYES ${market.yesProb}% / NO ${market.noProb}%\n지금 예측하러 가보세요! 👉 policat.kr`;
           if (navigator.share) {
@@ -189,7 +183,7 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
         }}
       >
         🔗 친구에게 공유하기 (+3P)
-      </motion.button>
+      </button>
     </motion.div>
   );
 }

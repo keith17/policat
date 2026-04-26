@@ -1,0 +1,130 @@
+/* ============================================================================
+   Policat Design System — Components
+   Import AFTER tokens.css.
+   ============================================================================ */
+
+/* ---------- Cards: flat, tonal, no border by default -------------------- */
+.glass-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  transition: transform 0.15s ease;
+}
+.glass-card:hover { transform: translateY(-1px); }
+
+.surface-alt {
+  background: var(--surface-alt);
+  border-radius: var(--radius-lg);
+}
+
+/* ---------- Buttons ----------------------------------------------------- */
+.btn-primary,
+.btn-yes, .btn-no, .btn-yes-soft, .btn-no-soft, .btn-soft, .btn-ghost {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 22px;
+  font: var(--fw-semi) var(--fs-14)/1 var(--font-sans);
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.btn-primary    { background: var(--ink);            color: var(--bg-primary); }
+.btn-yes        { background: var(--accent-yes);     color: #fff; }
+.btn-no         { background: var(--accent-no);      color: #fff; }
+.btn-yes-soft   { background: var(--accent-yes-soft); color: var(--accent-yes); }
+.btn-no-soft    { background: var(--accent-no-soft);  color: var(--accent-no); }
+.btn-soft       { background: var(--surface-alt);    color: var(--text-primary); }
+.btn-ghost      { background: transparent;           color: var(--text-primary); }
+
+.btn-primary:hover, .btn-yes:hover, .btn-no:hover,
+.btn-yes-soft:hover, .btn-no-soft:hover, .btn-soft:hover { opacity: 0.92; }
+.btn-ghost:hover { background: var(--surface-alt); }
+
+.btn-primary:disabled, .btn-yes:disabled, .btn-no:disabled,
+.btn-soft:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---------- Tags / Pills ------------------------------------------------ */
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: var(--fs-12); font-weight: var(--fw-semi);
+  letter-spacing: 0.1px;
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+}
+
+.tag-economy   { background: rgba(245,181,68,0.14);  color: #B07300; }
+.tag-politics  { background: rgba(150,118,255,0.14); color: #6B46C1; }
+.tag-society   { background: rgba(0,176,116,0.14);   color: #00824B; }
+.tag-sports    { background: rgba(22,82,240,0.14);   color: #1652F0; }
+
+.tag-yes  { background: var(--accent-yes-soft); color: var(--accent-yes); }
+.tag-no   { background: var(--accent-no-soft);  color: var(--accent-no);  }
+.tag-gold { background: var(--accent-gold-soft); color: #8B6508; }
+
+/* ---------- Tier color tokens ------------------------------------------- */
+.tier-rookie     { color: #94A3B8; }
+.tier-predictor  { color: #00B074; }
+.tier-analyst    { color: #1652F0; }
+.tier-strategist { color: #9676FF; }
+.tier-oracle     { color: #F5B544; }
+
+/* ---------- Inputs ------------------------------------------------------ */
+input, select, textarea {
+  font-family: inherit;
+  letter-spacing: -0.01em;
+  background: var(--surface-sunk);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  font-size: var(--fs-14);
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+input::placeholder, textarea::placeholder { color: var(--text-muted); }
+
+/* ---------- Probability bar -------------------------------------------- */
+.progress-yes, .progress-no {
+  height: 4px; border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.progress-yes { background: var(--accent-yes); }
+.progress-no  { background: var(--accent-no); }
+
+/* ---------- Ad container ----------------------------------------------- */
+.ad-container {
+  background: var(--surface-alt);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.ad-label {
+  position: absolute; top: 8px; right: 12px;
+  font-size: 10px; color: var(--text-muted);
+  font-weight: var(--fw-medium); letter-spacing: 0.5px;
+}
+
+/* ---------- Animations -------------------------------------------------- */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.85); }
+}
+.pulse-dot { animation: pulse-dot 1.5s infinite; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+/* ---------- Mobile responsive ------------------------------------------ */
+.mobile-only { display: none !important; }
+@media (max-width: 768px) {
+  .hidden-mobile { display: none !important; }
+  .mobile-only   { display: block !important; }
+}
