@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
-import { ShieldAlert, Users, TrendingUp, Lock, Coins, EyeOff, CheckCircle } from "lucide-react";
+import { ShieldAlert, Users, TrendingUp, Lock, Coins, EyeOff, CheckCircle, Star, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatPoints, getTier, tierConfig } from "@/lib/data";
 
@@ -25,10 +25,11 @@ interface MockMarket {
 export default function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"users" | "markets" | "orders">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "markets" | "orders" | "events">("users");
 
   const [users, setUsers] = useState<any[]>([]);
   const [markets, setMarkets] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const supabase = createClient();
 
@@ -47,6 +48,10 @@ export default function AdminDashboard() {
         // Fetch shop orders
         const { data: ords } = await supabase.from("shop_orders").select("*").order("created_at", { ascending: false });
         if (ords) setOrders(ords);
+
+        // Fetch events
+        const { data: evts } = await supabase.from("events").select("*").order("created_at", { ascending: false });
+        if (evts) setEvents(evts);
       }
       setLoading(false);
     }
@@ -101,6 +106,32 @@ export default function AdminDashboard() {
       await supabase.from("markets").update({ status: action }).eq("id", id);
     }
     setMarkets(prev => prev.map(m => m.id === id ? { ...m, status: action } : m));
+  };
+
+  const toggleMarketFeatured = async (id: string, current: boolean) => {
+    await supabase.from("markets").update({ is_featured: !current }).eq("id", id);
+    setMarkets(prev => prev.map(m => m.id === id ? { ...m, is_featured: !current } : m));
+  };
+
+  const assignMarketEvent = async (id: string, eventId: string) => {
+    const val = eventId === "none" ? null : eventId;
+    await supabase.from("markets").update({ event_id: val }).eq("id", id);
+    setMarkets(prev => prev.map(m => m.id === id ? { ...m, event_id: val } : m));
+  };
+
+  const [newEvent, setNewEvent] = useState({ title: "", description: "" });
+  const handleCreateEvent = async () => {
+    if (!newEvent.title) return;
+    const { data } = await supabase.from("events").insert([newEvent]).select();
+    if (data && data.length > 0) {
+      setEvents(prev => [data[0], ...prev]);
+      setNewEvent({ title: "", description: "" });
+    }
+  };
+
+  const toggleEventFeatured = async (id: string, current: boolean) => {
+    await supabase.from("events").update({ is_featured: !current }).eq("id", id);
+    setEvents(prev => prev.map(e => e.id === id ? { ...e, is_featured: !current } : e));
   };
 
   const handleCompleteOrder = async (id: string) => {
@@ -180,7 +211,18 @@ export default function AdminDashboard() {
               color: activeTab === "orders" ? "white" : "var(--text-secondary)",
             }}
           >
-            <CheckCircle size={18} /> 상점 주문 (쿠폰 발송)
+            <CheckCircle size={18} /> 상점 주문
+          </button>
+          <button 
+            onClick={() => setActiveTab("events")}
+            style={{
+              padding: "12px 24px", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s", border: "none",
+              background: activeTab === "events" ? "var(--accent-yes)" : "var(--bg-card)",
+              color: activeTab === "events" ? "white" : "var(--text-secondary)",
+            }}
+          >
+            <Calendar size={18} /> 이벤트 관리
           </button>
         </div>
 
@@ -259,6 +301,24 @@ export default function AdminDashboard() {
                     <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, textDecoration: m.status === "hidden" ? "line-through" : "none" }}>
                       {m.title}
                     </div>
+                    
+                    <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
+                      <button 
+                        onClick={() => toggleMarketFeatured(m.id, m.is_featured)}
+                        style={{ background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: m.is_featured ? "#eab308" : "var(--text-muted)" }}
+                      >
+                        <Star size={16} fill={m.is_featured ? "#eab308" : "none"} /> Featured
+                      </button>
+                      <select 
+                        value={m.event_id || "none"} 
+                        onChange={(e) => assignMarketEvent(m.id, e.target.value)}
+                        style={{ padding: "4px 8px", borderRadius: 4, background: "var(--bg-secondary)", color: "var(--text-secondary)", border: "1px solid var(--border)", fontSize: 12 }}
+                      >
+                        <option value="none">-- 이벤트 없음 --</option>
+                        {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
+                      </select>
+                    </div>
+
                     {["active", "hidden"].includes(m.status) && (
                       <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                         누적 베팅: YES {formatPoints(m.yes_pool)} / NO {formatPoints(m.no_pool)} (합계: {formatPoints(m.yes_pool + m.no_pool)})
@@ -286,7 +346,7 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : activeTab === "orders" ? (
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
               {orders.map(o => {
                 const userProfile = users.find(u => u.id === o.user_id);
@@ -319,7 +379,41 @@ export default function AdminDashboard() {
               })}
               {orders.length === 0 && <div style={{ color: "var(--text-muted)", textAlign: "center", padding: 40 }}>들어온 상점 주문이 없습니다.</div>}
             </div>
-          )}
+          ) : activeTab === "events" ? (
+            <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 24 }}>
+              <div style={{ background: "var(--bg-secondary)", padding: 20, borderRadius: 12, border: "1px solid var(--border)" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 12 }}>새 이벤트 생성</h3>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <input type="text" placeholder="이벤트 제목 (예: 2027년 대통령 선거)" value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
+                  <input type="text" placeholder="설명 (선택)" value={newEvent.description} onChange={e => setNewEvent({...newEvent, description: e.target.value})} style={{ flex: 2, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
+                  <button onClick={handleCreateEvent} style={{ padding: "10px 20px", background: "var(--purple-primary)", color: "white", borderRadius: 8, fontWeight: 700, border: "none", cursor: "pointer" }}>생성</button>
+                </div>
+              </div>
+
+              <div>
+                {events.map(ev => (
+                  <div key={ev.id} style={{ padding: 20, borderRadius: 12, border: "1px solid var(--border)", background: "var(--bg-card)", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>{ev.title}</div>
+                      <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>{ev.description || "설명 없음"}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
+                        포함된 마켓: {markets.filter(m => m.event_id === ev.id).length}개
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <button 
+                        onClick={() => toggleEventFeatured(ev.id, ev.is_featured)}
+                        style={{ padding: "8px 16px", borderRadius: 8, background: ev.is_featured ? "rgba(234,179,8,0.1)" : "transparent", border: ev.is_featured ? "1px solid #eab308" : "1px solid var(--border)", color: ev.is_featured ? "#eab308" : "var(--text-secondary)", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                      >
+                        <Star size={16} fill={ev.is_featured ? "#eab308" : "none"} /> Featured
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {events.length === 0 && <div style={{ color: "var(--text-muted)", textAlign: "center", padding: 40 }}>등록된 이벤트가 없습니다.</div>}
+              </div>
+            </div>
+          ) : null}
         </div>
       </main>
 

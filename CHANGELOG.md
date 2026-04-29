@@ -5,6 +5,16 @@
 
 ---
 
+## [0.6.0] - 2026-04-30
+### 추가
+- 홈 화면 상단에 Featured Market & Event 캐로셀(Carousel) 추가
+- `events` 테이블 추가를 통한 다중 후보(Market) 그룹핑 기능
+- `EventCard` 컴포넌트 추가 및 `/event/[id]` 상세 페이지 구현
+- 관리자 페이지(`app/admin/page.tsx`) 내 이벤트 생성 및 Featured 토글 기능 추가
+- `update_events.sql` 마이그레이션 스크립트 작성
+
+---
+
 ## [0.5.1] - 2026-04-26
 ### 수정됨 (DB)
 - `point_transactions.type` check constraint에 `ad_reward` 추가

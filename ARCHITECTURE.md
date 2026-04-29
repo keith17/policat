@@ -52,6 +52,7 @@
 ├── rpc_settlement.sql          # resolve_market / refund_market RPC 함수
 ├── update_xp.sql               # XP 컬럼 추가 및 resolve_market 함수 업데이트
 ├── update_shop_orders.sql      # shop_orders 테이블 및 RLS 정책
+├── update_events.sql           # events 테이블 및 featured 기능 추가
 ├── CHANGELOG.md                # 버전별 변경 이력
 ├── ISSUES.md                   # 런칭 전 잔여 이슈 목록 (GitHub Issues와 동기화)
 ├── AGENTS.md                   # AI 에이전트 작업 규칙 (매 Push 시 업데이트)
@@ -83,9 +84,21 @@
 | yes_pool | integer | YES 쪽에 걸린 총 포인트 |
 | no_pool | integer | NO 쪽에 걸린 총 포인트 |
 | status | text | active / pending / resolved_yes / resolved_no / hidden / cancelled |
+| event_id | uuid | events.id 참조 (다중 후보 마켓의 경우) |
+| is_featured | boolean | 상단 캐로셀 노출 여부 |
 | created_at | timestamptz | - |
 | resolved_at | timestamptz | 판정 완료 시각 |
 | resolved_by | uuid | 판정한 어드민 ID |
+
+### `events`
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| id | uuid (PK) | - |
+| title | text | 이벤트 제목 |
+| description | text | 이벤트 설명 |
+| is_featured | boolean | 상단 캐로셀 노출 여부 |
+| status | text | active / closed / hidden |
+| created_at | timestamptz | - |
 
 ### `bets`
 | 컬럼 | 타입 | 설명 |

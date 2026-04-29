@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import MarketCard from "@/components/MarketCard";
+import EventCard from "@/components/EventCard";
+import FeaturedCarousel, { FeaturedItem } from "@/components/FeaturedCarousel";
 import { AdBanner } from "@/components/AdBanner";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
@@ -14,6 +16,8 @@ export default function Home() {
   const [xp, setXp] = useState(500);
   const [streak, setStreak] = useState(3);
   const [markets, setMarkets] = useState(initialMarkets);
+  const [events, setEvents] = useState<any[]>([]);
+  const [featuredItems, setFeaturedItems] = useState<FeaturedItem[]>([]);
   const [filter, setFilter] = useState("all");
   const [toast, setToast] = useState<{ msg: string; type: "success" | "info" | "warn" } | null>(null);
   const [betModal, setBetModal] = useState<{ marketId: string; side: "yes" | "no" } | null>(null);
@@ -54,6 +58,11 @@ export default function Home() {
         .in("status", ["active", "pending"])
         .order("created_at", { ascending: false });
       
+      const { data: evts } = await supabase.from("events")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
       let userBets: any[] = [];
       if (user) {
         const { data: bets } = await supabase.from("bets").select("*").eq("user_id", user.id);
@@ -87,11 +96,44 @@ export default function Home() {
              myBet: myBetRecord ? myBetRecord.side : null,
              myBetAmount: myBetRecord ? myBetRecord.amount : 0
            };
-        });
+         });
         setMarkets(enhancedMkts);
       } else {
         setMarkets([]);
       }
+      
+      let fItems: FeaturedItem[] = [];
+      if (evts) {
+        setEvents(evts);
+        fItems = [...fItems, ...evts.filter((e:any) => e.is_featured).map((e:any) => ({
+          id: e.id,
+          type: 'event' as const,
+          title: e.title,
+          description: e.description,
+          emoji: '🎉'
+        }))];
+      } else {
+        setEvents([]);
+      }
+
+      if (mkts) {
+        // Also add featured markets
+        const activeMkts = mkts.filter((m:any) => m.status === 'active');
+        fItems = [...fItems, ...activeMkts.filter((m:any) => m.is_featured).map((m:any) => {
+          const total = m.yes_pool + m.no_pool;
+          const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
+          const noProb = total > 0 ? 100 - yesProb : 50;
+          return {
+            id: m.id,
+            type: 'market' as const,
+            title: m.title,
+            description: m.description,
+            emoji: m.category === 'economy' ? '📈' : m.category === 'politics' ? '🏛️' : m.category === 'society' ? '🤝' : '⚽',
+            yesProb, noProb, totalVolume: total
+          };
+        })];
+      }
+      setFeaturedItems(fItems);
     }
     fetchMarketsAndBets();
   }, [user, supabase]);
@@ -275,6 +317,13 @@ export default function Home() {
         <AdBanner type="horizontal" />
       </div>
 
+      {/* Featured Carousel */}
+      {featuredItems.length > 0 && (
+        <section style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
+          <FeaturedCarousel items={featuredItems} />
+        </section>
+      )}
+
       {/* Markets Section */}
       <section style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px 80px" }}>
         {/* Filter tabs */}
@@ -317,13 +366,16 @@ export default function Home() {
           gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
           gap: 16
         }}>
+          {filter === "all" && events.map((event, i) => (
+            <EventCard key={`evt-${event.id}`} event={event} index={i} />
+          ))}
           {filteredMarkets.map((market, i) => (
             <MarketCard
-              key={market.id}
+              key={`mkt-${market.id}`}
               market={market}
               onBet={handleBet}
               userPoints={points}
-              index={i}
+              index={i + (filter === "all" ? events.length : 0)}
             />
           ))}
         </div>

@@ -47,6 +47,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | Vercel 배포 + GitHub 자동 배포 | ✅ 완료 | main push → 자동 배포 |
 | Google OAuth 프로덕션 도메인 설정 | ✅ 완료 | |
 | Supabase Auth 프로덕션 URL 설정 | ✅ 완료 | |
+| 다중 후보 이벤트(Event) & 주요 마켓(Featured) 캐로셀 | ✅ 완료 | `events` 테이블 추가, 홈 화면 캐로셀 적용 |
 
 ### 🔴 남은 핵심 과제 (GitHub Issues)
 | Issue | 제목 | 우선순위 | 비고 |
@@ -119,7 +120,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | 테이블 | 주요 컬럼 | 비고 |
 |--------|-----------|------|
 | `profiles` | id, email, full_name, points, xp, streak, is_admin | auth.users 확장 |
-| `markets` | id, title, category, description, yes_pool, no_pool, status | status: active/pending/resolved_yes/resolved_no/hidden |
+| `markets` | id, title, category, description, yes_pool, no_pool, status, event_id, is_featured | status: active/pending/resolved_yes/resolved_no/hidden |
+| `events` | id, title, description, is_featured, status | 다중 후보 마켓 그룹핑 테이블 |
 | `bets` | id, user_id, market_id, side, amount | INSERT 시 Trigger로 yes_pool/no_pool 자동 업데이트 |
 | `point_transactions` | id, user_id, amount, type, description | type: signup/bet/reward/ad_watch/ad_reward/refund/shop_purchase |
 | `shop_orders` | id, user_id, item_id, item_name, price, contact_info, status | status: pending/completed/canceled |
