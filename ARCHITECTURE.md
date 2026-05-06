@@ -129,6 +129,17 @@
 | contact_info | text | 쿠폰 수신 연락처 |
 | status | text | pending / completed / canceled |
 
+### `comments`
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| id | uuid (PK) | - |
+| market_id | uuid | markets.id 참조 (null 가능) |
+| event_id | uuid | events.id 참조 (null 가능) |
+| user_id | uuid | profiles.id 참조 |
+| parent_id | uuid | comments.id 참조 (null이면 최상위 댓글) |
+| content | text | 댓글 내용 |
+| created_at | timestamptz | - |
+
 ## 4. Core Logic & User Flow (핵심 로직)
 
 1.  **비로그인 접속**: 마켓 목록 조회 가능, 베팅 불가

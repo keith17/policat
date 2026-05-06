@@ -80,13 +80,14 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
       }}>
         {/* Logo */}
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 38, height: 38 }}>
-            <img src="/logo.svg" alt="Policat" width={38} height={38} />
+          <div style={{ width: 32, height: 32 }}>
+            <img src="/logo.svg" alt="Policat" width={32} height={32} />
           </div>
           <span style={{
-            fontSize: 22, fontWeight: 700,
-            color: "var(--text-primary)", letterSpacing: "-0.04em"
-          }}>Policat</span>
+            fontSize: 24, fontWeight: 900,
+            color: "var(--text-primary)", letterSpacing: "-0.02em",
+            fontFamily: "system-ui, -apple-system, sans-serif"
+          }}>POLICAT</span>
         </Link>
 
         {/* Center Nav */}

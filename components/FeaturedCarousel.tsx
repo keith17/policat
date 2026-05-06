@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
+import TrendGraph, { TrendData } from "@/components/TrendGraph";
+import { createClient } from "@/utils/supabase/client";
 
 export type FeaturedItem = {
   id: string;
@@ -15,18 +17,89 @@ export type FeaturedItem = {
   yesProb?: number;
   noProb?: number;
   totalVolume?: number;
+  markets?: any[]; // for events
 };
 
 export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [trendData, setTrendData] = useState<Record<string, TrendData[]>>({});
+  const supabase = createClient();
 
   useEffect(() => {
     if (items.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % items.length);
-    }, 5000);
+    }, 6000);
     return () => clearInterval(timer);
   }, [items.length]);
+
+  // Fetch trend data for the current item
+  useEffect(() => {
+    const fetchTrend = async () => {
+      if (!items || items.length === 0) return;
+      const current = items[currentIndex];
+      if (trendData[current.id]) return; // Already fetched
+
+      let marketIds: any[] = [];
+      let mktsWithTitles: any[] = [];
+      if (current.type === 'market') {
+        marketIds = [current.id];
+      } else {
+        const { data: mkts } = await supabase.from('markets').select('id, title').eq('event_id', current.id);
+        if (mkts) {
+          marketIds = mkts.map(m => m.id);
+          mktsWithTitles = mkts;
+        }
+      }
+
+      if (marketIds.length > 0) {
+        const { data: allBets } = await supabase.from('bets').select('*').in('market_id', marketIds).order('created_at', { ascending: true });
+        if (allBets && allBets.length > 0) {
+          const dailyData = new Map<string, any>();
+          const currentPools: Record<string, { yes: number, no: number }> = {};
+          
+          if (current.type === 'market') {
+            currentPools[current.id] = { yes: 10000, no: 10000 };
+          } else {
+            mktsWithTitles.forEach(m => currentPools[m.id] = { yes: 10000, no: 10000 });
+          }
+
+          allBets.forEach(bet => {
+            const date = bet.created_at.split('T')[0];
+            if (!dailyData.has(date)) dailyData.set(date, { date });
+            
+            const pool = currentPools[bet.market_id];
+            if (pool) {
+              if (bet.side === 'yes') pool.yes += bet.amount;
+              else pool.no += bet.amount;
+              const prob = Math.round((pool.yes / (pool.yes + pool.no)) * 100);
+              
+              if (current.type === 'market') {
+                dailyData.get(date)["YES"] = prob;
+              } else {
+                const marketTitle = mktsWithTitles.find(m => m.id === bet.market_id)?.title;
+                if (marketTitle) {
+                  dailyData.get(date)[marketTitle] = prob;
+                }
+              }
+            }
+          });
+
+          let lastKnown: Record<string, any> = {};
+          const trend: TrendData[] = [];
+          Array.from(dailyData.keys()).sort().forEach(date => {
+            const merged = { ...lastKnown, ...dailyData.get(date) };
+            trend.push(merged as TrendData);
+            lastKnown = { ...merged };
+            delete lastKnown.date;
+          });
+
+          setTrendData(prev => ({ ...prev, [current.id]: trend }));
+        }
+      }
+    };
+    fetchTrend();
+  }, [currentIndex, items, supabase, trendData]);
 
   if (!items || items.length === 0) return null;
 
@@ -69,26 +142,66 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
             </p>
           )}
 
-          {!isEvent && currentItem.yesProb !== undefined && (
-            <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--accent-yes)" }}>
-                YES {currentItem.yesProb}%
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--accent-no)" }}>
-                NO {currentItem.noProb}%
+          <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
+            <div style={{ flex: 1 }}>
+              {!isEvent && currentItem.yesProb !== undefined && (
+                <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--accent-yes)" }}>
+                    YES {currentItem.yesProb}%
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--accent-no)" }}>
+                    NO {currentItem.noProb}%
+                  </div>
+                </div>
+              )}
+
+              {isEvent && currentItem.markets && currentItem.markets.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+                  {currentItem.markets.slice(0, 3).map((m: any, i: number) => {
+                    const color = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ec4899", "#f43f5e"][i%6];
+                    return (
+                      <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, background: "rgba(0,0,0,0.1)", padding: "6px 12px", borderRadius: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
+                          <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{m.title}</span>
+                        </div>
+                        <span style={{ color: color, fontWeight: 800 }}>{m.yesProb}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div>
+                <Link href={linkHref} style={{ textDecoration: "none" }}>
+                  <button style={{ 
+                    padding: "12px 24px", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: "pointer",
+                    background: "var(--text-primary)", color: "var(--bg-primary)", border: "none"
+                  }}>
+                    {isEvent ? "이벤트 보기" : "예측 참여하기"}
+                  </button>
+                </Link>
               </div>
             </div>
-          )}
 
-          <div>
-            <Link href={linkHref} style={{ textDecoration: "none" }}>
-              <button style={{ 
-                padding: "12px 24px", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: "pointer",
-                background: "var(--text-primary)", color: "var(--bg-primary)", border: "none"
-              }}>
-                {isEvent ? "이벤트 보기" : "예측 참여하기"}
-              </button>
-            </Link>
+            {/* Mini Trend Graph */}
+            {trendData[currentItem.id] && (
+              <div style={{ flex: 1, height: 120, minWidth: 200, opacity: 0.8, pointerEvents: "none" }} className="hidden-mobile">
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                  <TrendingUp size={12} /> 실시간 추이
+                </div>
+                <TrendGraph 
+                  data={trendData[currentItem.id]} 
+                  lines={
+                    isEvent && currentItem.markets
+                      ? currentItem.markets.map((m: any, i: number) => ({ key: m.title, name: m.title, color: ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ec4899", "#f43f5e"][i%6] }))
+                      : [{ key: "YES", name: "YES", color: "var(--accent-yes)" }]
+                  } 
+                  height={100} 
+                  hideAxis={true} 
+                />
+              </div>
+            )}
           </div>
         </motion.div>
       </AnimatePresence>

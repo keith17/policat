@@ -25,7 +25,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ---
 
-## 📍 현재 상태 (as of 2026-04-26, 01:13 KST)
+## 📍 현재 상태 (as of 2026-05-06)
 
 ### ✅ 완료된 것
 | 항목 | 상태 | 비고 |
@@ -48,6 +48,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | Google OAuth 프로덕션 도메인 설정 | ✅ 완료 | |
 | Supabase Auth 프로덕션 URL 설정 | ✅ 완료 | |
 | 다중 후보 이벤트(Event) & 주요 마켓(Featured) 캐로셀 | ✅ 완료 | `events` 테이블 추가, 홈 화면 캐로셀 적용 |
+| 이벤트 통합 뷰 및 Trend Graph 시각화 | ✅ 완료 | 후보별 실시간 지지율 차트 및 범례 연동 |
+| 중첩 댓글 시스템 (대댓글 지원) | ✅ 완료 | `comments` 테이블 기반 커뮤니티 기능 |
+| 초기 마켓/이벤트 실데이터 시딩 | ✅ 완료 | 2026 월드컵 예제 (30일치 시계열 베팅 기록) |
+| 신규 로고(브랜딩) 업데이트 | ✅ 완료 | 파란색/빨간색 원형 및 볼드 텍스트 SVG 적용 |
 
 ### 🔴 남은 핵심 과제 (GitHub Issues)
 | Issue | 제목 | 우선순위 | 비고 |
@@ -86,10 +90,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
    - `app/leaderboard/page.tsx` line 38: `p.email.split('@')[0]` → `p.email?.split('@')[0] || '익명'`
 
 ### 단기 (이번 주)
-3. **초기 마켓 데이터 시드** (`/seed` 페이지 사용 또는 Supabase에서 직접 INSERT)
-   - 실제 운영할 마켓 5~10개를 `active` 상태로 넣어야 홈화면에 내용 표시됨
-
-4. **streak 자동 업데이트 구현**
+3. **streak 자동 업데이트 구현**
    - 로그인 시 또는 출석 체크 시 `profiles.streak` +1, 날짜 기반 중복 방지
 
 ### 중기 (런칭 후)

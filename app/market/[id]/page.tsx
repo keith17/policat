@@ -6,31 +6,9 @@ import { formatPoints, formatDate } from "@/lib/data";
 import { AdBanner } from "@/components/AdBanner";
 import Navbar from "@/components/Navbar";
 import { useState, useEffect } from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import TrendGraph, { TrendData } from "@/components/TrendGraph";
+import CommentSection from "@/components/CommentSection";
 import { createClient } from "@/utils/supabase/client";
-
-// Mock chart data
-const generateChartData = (finalYes: number) => {
-  const data = [];
-  let val = 50;
-  for (let i = 0; i < 30; i++) {
-    val += (Math.random() - 0.48) * 5;
-    val = Math.max(10, Math.min(90, val));
-    if (i === 29) val = finalYes;
-    data.push({
-      day: `${i + 1}일`,
-      yes: parseFloat(val.toFixed(1)),
-      no: parseFloat((100 - val).toFixed(1))
-    });
-  }
-  return data;
-};
-
-const comments = [
-  { user: "경제달인", tier: "oracle", text: "금통위 결정 패턴 보면 거의 동결 확실. YES 강력 추천!", time: "2시간 전", likes: 24 },
-  { user: "판세읽는자", tier: "strategist", text: "미국 연준 동향을 봐야 함. 아직 불확실 요인이 많죠.", time: "3시간 전", likes: 17 },
-  { user: "루키냥이", tier: "rookie", text: "처음 해보는데 YES로 했어요 ㅎㅎ", time: "5시간 전", likes: 8 },
-];
 
 export default function MarketDetailPage() {
   const params = useParams();
@@ -46,6 +24,7 @@ export default function MarketDetailPage() {
   const [betSide, setBetSide] = useState<"yes" | "no" | null>(null);
   const [betAmount, setBetAmount] = useState(50);
   const [toast, setToast] = useState<string | null>(null);
+  const [trendData, setTrendData] = useState<TrendData[]>([]);
   
   const supabase = createClient();
 
@@ -80,6 +59,41 @@ export default function MarketDetailPage() {
           daysLeft: Math.max(0, 7 - Math.floor((new Date().getTime() - new Date(mData.created_at).getTime()) / (1000 * 60 * 60 * 24))),
           endDate: mData.created_at
         });
+
+        // Fetch ALL bets for trend graph
+        const { data: allBets } = await supabase.from("bets").select("*").eq("market_id", marketId).order("created_at", { ascending: true });
+
+        if (allBets && allBets.length > 0) {
+          const dailyData = new Map<string, any>();
+          // Approximate initial pool (10000 each) to match seed data logic, or start from 0 if you want actual. Since MVP mock seeds start at 10k:
+          const currentPool = { yes: 10000, no: 10000 }; 
+
+          allBets.forEach(bet => {
+            const date = bet.created_at.split('T')[0];
+            if (!dailyData.has(date)) {
+              dailyData.set(date, { date });
+            }
+            if (bet.side === 'yes') currentPool.yes += bet.amount;
+            else currentPool.no += bet.amount;
+
+            const prob = Math.round((currentPool.yes / (currentPool.yes + currentPool.no)) * 100);
+            dailyData.get(date)["YES"] = prob;
+          });
+
+          let lastKnown: Record<string, any> = {};
+          const sortedDates = Array.from(dailyData.keys()).sort();
+          const trend: TrendData[] = [];
+          
+          sortedDates.forEach(date => {
+            const dayData = dailyData.get(date);
+            const merged = { ...lastKnown, ...dayData };
+            trend.push(merged as TrendData);
+            lastKnown = { ...merged };
+            delete lastKnown.date;
+          });
+
+          setTrendData(trend);
+        }
       }
       setLoading(false);
     }
@@ -97,8 +111,6 @@ export default function MarketDetailPage() {
       </div>
     );
   }
-
-  const chartData = generateChartData(market.yesProb);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -236,73 +248,14 @@ export default function MarketDetailPage() {
                 />
               </div>
 
-              {/* Chart */}
-              <ResponsiveContainer width="100%" height={180}>
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="yesGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--accent-yes)" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="var(--accent-yes)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="day" tick={{ fill: "var(--text-muted)", fontSize: 10 }} tickLine={false} axisLine={false} interval={9} />
-                  <YAxis domain={[0, 100]} tick={{ fill: "var(--text-muted)", fontSize: 10 }} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)", fontWeight: 700 }}
-                    formatter={(val) => [`${val}%`]}
-                  />
-                  <Area type="monotone" dataKey="yes" stroke="var(--accent-yes)" strokeWidth={2} fill="url(#yesGrad)" dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
+              {/* Trend Graph */}
+              <div style={{ marginTop: 24 }}>
+                <TrendGraph data={trendData} lines={[{ key: "YES", name: "YES 확률", color: "var(--accent-yes)" }]} height={200} hideAxis={false} />
+              </div>
             </motion.div>
 
             {/* Comments */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 24 }}
-            >
-              <h2 style={{ fontWeight: 800, fontSize: 16, marginBottom: 20, color: "var(--text-primary)" }}>💬 예측 근거 공유</h2>
-              {comments.map((c, i) => (
-                <div key={i} style={{
-                  marginBottom: 16, paddingBottom: 16,
-                  borderBottom: i < comments.length - 1 ? "1px solid var(--border)" : "none"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
-                      {c.user}
-                      <span style={{ marginLeft: 6, fontSize: 11, color: catColor, fontWeight: 700 }}>
-                        {c.tier === "oracle" ? "👑 오라클" : c.tier === "strategist" ? "🧠 전략가" : "🐣 루키"}
-                      </span>
-                    </span>
-                    <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{c.time}</span>
-                  </div>
-                  <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.6 }}>{c.text}</p>
-                  <button style={{
-                    marginTop: 8, background: "none", border: "none",
-                    color: "var(--text-muted)", fontSize: 12, cursor: "pointer", fontWeight: 600
-                  }}>
-                    👍 {c.likes}
-                  </button>
-                </div>
-              ))}
-              <div style={{ marginTop: 16 }}>
-                <textarea
-                  placeholder="예측 근거를 공유하면 +5P!"
-                  rows={3}
-                  style={{
-                    width: "100%", background: "var(--bg-secondary)",
-                    border: "1px solid var(--border)", borderRadius: 8,
-                    color: "var(--text-primary)", padding: 12, fontSize: 14, resize: "none",
-                    outline: "none", fontFamily: "inherit"
-                  }}
-                />
-                <button className="btn-primary" style={{ marginTop: 8, padding: "10px 20px", fontSize: 13 }}>
-                  작성하기 (+5P)
-                </button>
-              </div>
-            </motion.div>
+            <CommentSection marketId={marketId} currentUser={user} />
           </div>
 
           {/* Right Sidebar */}

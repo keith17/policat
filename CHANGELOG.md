@@ -5,6 +5,17 @@
 
 ---
 
+## [0.7.0] - 2026-05-06
+### 추가
+- 이벤트 통합 뷰 및 후보별 확률 실시간 시각화 (`EventCard`, `FeaturedCarousel`)
+- `components/TrendGraph.tsx`: 시계열 트렌드 차트 추가 및 홈페이지, 상세 페이지 연동
+- 중첩 댓글 시스템 (`comments` 테이블 및 `CommentSection.tsx` 트리 구조 대댓글)
+- 실제 데이터를 반영한 마켓 초기 시드 (`/seed`, 2026 북중미 월드컵 A조)
+### 변경
+- 브랜딩 로고 업데이트 (파란색/빨간색 원형 및 볼드 텍스트 SVG 적용)
+
+---
+
 ## [0.6.0] - 2026-04-30
 ### 추가
 - 홈 화면 상단에 Featured Market & Event 캐로셀(Carousel) 추가

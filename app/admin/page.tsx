@@ -64,6 +64,7 @@ export default function AdminDashboard() {
 
   const [refundModal, setRefundModal] = useState<{ marketId: string; title: string, total: number } | null>(null);
   const [refundReason, setRefundReason] = useState("");
+  const [newEvent, setNewEvent] = useState({ title: "", description: "" });
 
   // (Data loading moved up)
 
@@ -119,7 +120,6 @@ export default function AdminDashboard() {
     setMarkets(prev => prev.map(m => m.id === id ? { ...m, event_id: val } : m));
   };
 
-  const [newEvent, setNewEvent] = useState({ title: "", description: "" });
   const handleCreateEvent = async () => {
     if (!newEvent.title) return;
     const { data } = await supabase.from("events").insert([newEvent]).select();
@@ -356,7 +356,7 @@ export default function AdminDashboard() {
                     background: "var(--bg-card)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16
                   }}>
                     <div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>주문일시: {new Date(o.created_at).toLocaleString()}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>주문일시: {o.created_at.replace("T", " ").substring(0, 16)}</div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>{o.item_name} ({formatPoints(o.price)})</div>
                       <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>
                         신청자: {userProfile ? userProfile.email : "알 수 없음"} <br/>

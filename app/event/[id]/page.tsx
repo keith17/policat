@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import Navbar from "@/components/Navbar";
-import MarketCard from "@/components/MarketCard";
+import TrendGraph, { TrendData } from "@/components/TrendGraph";
+import CommentSection from "@/components/CommentSection";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatPoints } from "@/lib/data";
 
@@ -13,6 +14,7 @@ export default function EventPage() {
   const id = params.id as string;
   const [event, setEvent] = useState<any>(null);
   const [markets, setMarkets] = useState<any[]>([]);
+  const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [points, setPoints] = useState(0);
@@ -36,12 +38,17 @@ export default function EventPage() {
       const { data: evt } = await supabase.from("events").select("*").eq("id", id).single();
       if (evt) setEvent(evt);
 
-      // Fetch Markets for this Event
+      // Fetch Markets
       const { data: mkts } = await supabase.from("markets")
         .select("*")
         .eq("event_id", id)
         .in("status", ["active", "pending"])
         .order("created_at", { ascending: false });
+
+      if (!mkts) {
+        setLoading(false);
+        return;
+      }
 
       let userBets: any[] = [];
       if (user) {
@@ -49,35 +56,72 @@ export default function EventPage() {
         userBets = bets || [];
       }
 
-      if (mkts) {
-        const enhancedMkts = mkts.map((m: any) => {
-          const total = m.yes_pool + m.no_pool;
-          const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
-          const noProb = total > 0 ? 100 - yesProb : 50;
-          const myBetRecord = userBets.find(b => b.market_id === m.id);
+      const enhancedMkts = mkts.map((m: any) => {
+        const total = m.yes_pool + m.no_pool;
+        const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
+        const myBetRecord = userBets.find(b => b.market_id === m.id);
 
-          return {
-            id: m.id,
-            title: m.title,
-            category: m.category,
-            categoryLabel: m.category === 'economy' ? '경제' : m.category === 'politics' ? '정치' : m.category === 'society' ? '사회' : '스포츠',
-            emoji: m.category === 'economy' ? '📈' : m.category === 'politics' ? '🏛️' : m.category === 'society' ? '🤝' : '⚽',
-            yesProb, noProb,
-            yesAmount: m.yes_pool,
-            noAmount: m.no_pool,
-            endDate: m.created_at,
-            description: m.description || "",
-            totalVolume: total,
-            participants: Math.floor(total / 100) + 1,
-            daysLeft: Math.max(0, 7 - Math.floor((new Date().getTime() - new Date(m.created_at).getTime()) / (1000 * 60 * 60 * 24))),
-            hot: total > 5000,
-            new: new Date().getTime() - new Date(m.created_at).getTime() < 86400000 * 2,
-            myBet: myBetRecord ? myBetRecord.side : null,
-            myBetAmount: myBetRecord ? myBetRecord.amount : 0
-          };
+        return {
+          ...m,
+          yesProb,
+          noProb: 100 - yesProb,
+          totalVolume: total,
+          myBet: myBetRecord ? myBetRecord.side : null,
+          myBetAmount: myBetRecord ? myBetRecord.amount : 0
+        };
+      });
+      // Sort by yesProb descending
+      enhancedMkts.sort((a, b) => b.yesProb - a.yesProb);
+      setMarkets(enhancedMkts);
+
+      // Fetch ALL bets for trend graph
+      const marketIds = mkts.map(m => m.id);
+      const { data: allBets } = await supabase.from("bets").select("*").in("market_id", marketIds).order("created_at", { ascending: true });
+
+      if (allBets && allBets.length > 0) {
+        // Group bets by day and calculate cumulative probability
+        const dailyData = new Map<string, any>();
+        
+        // Initial state for each market
+        const currentPools: Record<string, { yes: number, no: number }> = {};
+        mkts.forEach(m => {
+          // Approximate initial pool assuming mock starts at 10000/something
+          currentPools[m.id] = { yes: 10000, no: 10000 }; 
         });
-        setMarkets(enhancedMkts);
+
+        allBets.forEach(bet => {
+          const date = bet.created_at.split('T')[0];
+          if (!dailyData.has(date)) {
+            dailyData.set(date, { date });
+          }
+          const pool = currentPools[bet.market_id];
+          if (bet.side === 'yes') pool.yes += bet.amount;
+          else pool.no += bet.amount;
+
+          // Snapshot probability at the end of the day
+          const market = mkts.find(m => m.id === bet.market_id);
+          if (market) {
+            const prob = Math.round((pool.yes / (pool.yes + pool.no)) * 100);
+            dailyData.get(date)[market.title] = prob;
+          }
+        });
+
+        // Fill missing days
+        let lastKnown: Record<string, any> = {};
+        const sortedDates = Array.from(dailyData.keys()).sort();
+        const trend: TrendData[] = [];
+        
+        sortedDates.forEach(date => {
+          const dayData = dailyData.get(date);
+          const merged = { ...lastKnown, ...dayData };
+          trend.push(merged as TrendData);
+          lastKnown = { ...merged };
+          delete lastKnown.date;
+        });
+
+        setTrendData(trend);
       }
+
       setLoading(false);
     }
     loadData();
@@ -107,7 +151,7 @@ export default function EventPage() {
     const newPoints = points - betAmount;
     setPoints(newPoints);
     setMarkets(prev => prev.map(m =>
-      m.id === betModal.marketId ? { ...m, myBet: betModal.side, myBetAmount: betAmount } : m
+      m.id === betModal.marketId ? { ...m, myBet: betModal.side, myBetAmount: betAmount, [betModal.side + "_pool"]: m[betModal.side + "_pool"] + betAmount, yesProb: Math.round(( (m.yes_pool + (betModal.side === 'yes' ? betAmount : 0)) / (m.yes_pool + m.no_pool + betAmount) ) * 100) } : m
     ));
     setBetModal(null);
     showToast(`🎯 예측 완료! ${betAmount}P 베팅`, "success");
@@ -116,6 +160,14 @@ export default function EventPage() {
     await supabase.from("profiles").update({ points: newPoints }).eq("id", user.id);
     await supabase.from("point_transactions").insert({ user_id: user.id, amount: -betAmount, type: "bet", description: `예측 참여 (${betModal.side.toUpperCase()})` });
   };
+
+  // Define colors for candidate lines
+  const colors = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ec4899", "#f43f5e"];
+  const lines = markets.map((m, i) => ({
+    key: m.title,
+    name: m.title,
+    color: colors[i % colors.length]
+  }));
 
   if (loading) return <div className="animated-bg" style={{ minHeight: "100vh" }} />;
 
@@ -127,15 +179,15 @@ export default function EventPage() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg-primary)", paddingBottom: 100 }}>
       <Navbar points={points} streak={0} xp={0} />
 
-      <section style={{ maxWidth: 1200, margin: "0 auto", padding: "120px 20px 40px" }}>
-        <div style={{ marginBottom: 40, borderBottom: "1px solid var(--border)", paddingBottom: 40 }}>
+      <section style={{ maxWidth: 1000, margin: "0 auto", padding: "100px 20px 40px" }}>
+        <div style={{ marginBottom: 40 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(139,92,246,0.1)", color: "var(--purple-primary)", padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 800, marginBottom: 16 }}>
             🎉 다중 후보 이벤트
           </div>
-          <h1 style={{ fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 900, color: "var(--text-primary)", marginBottom: 16, lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontWeight: 900, color: "var(--text-primary)", marginBottom: 16, lineHeight: 1.2 }}>
             {event.title}
           </h1>
           {event.description && (
@@ -145,18 +197,55 @@ export default function EventPage() {
           )}
         </div>
 
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 24 }}>후보별 마켓</h2>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 16 }}>
-          {markets.map((market, i) => (
-            <MarketCard key={market.id} market={market} onBet={handleBet} userPoints={points} index={i} />
-          ))}
-          {markets.length === 0 && (
-            <div style={{ color: "var(--text-muted)", padding: 40, textAlign: "center", gridColumn: "1 / -1" }}>
-              등록된 마켓이 없습니다.
-            </div>
-          )}
+        {/* Trend Graph */}
+        <div style={{ marginBottom: 40, padding: 24, background: "var(--bg-card)", borderRadius: 16, border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 20 }}>📊 시간에 따른 당선 확률(YES) 추이</h2>
+          <TrendGraph data={trendData} lines={lines} height={350} />
         </div>
+
+        {/* Aggregated Candidate List */}
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", marginBottom: 20 }}>후보별 예측 참여</h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {markets.map((m, i) => (
+            <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-card)", padding: 20, borderRadius: 12, border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)", flexWrap: "wrap", gap: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, flex: "1 1 300px" }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: colors[i % colors.length], color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16 }}>
+                  {i + 1}
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{m.title}</h3>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>총 {m.totalVolume.toLocaleString()}P 참여</div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 24, flex: "1 1 300px", justifyContent: "flex-end" }}>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: colors[i % colors.length] }}>{m.yesProb}%</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>당선 (YES)</div>
+                </div>
+
+                {m.myBet ? (
+                  <div style={{ background: "var(--surface-alt)", padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, textAlign: "center", minWidth: 160 }}>
+                    ✓ {m.myBet === 'yes' ? '당선(YES)' : '낙선(NO)'} 예측 완료<br/>
+                    <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400 }}>{m.myBetAmount}P 참여</span>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => handleBet(m.id, 'yes')} style={{ padding: "10px 20px", background: "var(--accent-yes-soft)", color: "var(--accent-yes)", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="var(--accent-yes)"} onMouseLeave={e=>e.currentTarget.style.background="var(--accent-yes-soft)"}>
+                      당선 YES
+                    </button>
+                    <button onClick={() => handleBet(m.id, 'no')} style={{ padding: "10px 20px", background: "var(--accent-no-soft)", color: "var(--accent-no)", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="var(--accent-no)"} onMouseLeave={e=>e.currentTarget.style.background="var(--accent-no-soft)"}>
+                      낙선 NO
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Comment Section */}
+        <CommentSection eventId={id} currentUser={user} />
       </section>
 
       {/* Bet Modal */}
@@ -173,7 +262,7 @@ export default function EventPage() {
               style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 201, width: "90%", maxWidth: 420, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 28, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
             >
               <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, color: "var(--text-primary)" }}>
-                {betModal.side === "yes" ? "📈 YES 예측" : "📉 NO 예측"}
+                {betModal.side === "yes" ? "📈 당선(YES) 예측" : "📉 낙선(NO) 예측"}
               </h3>
               <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>
                 {markets.find(m => m.id === betModal.marketId)?.title}

@@ -6,6 +6,7 @@ import Link from "next/link";
 import MarketCard from "@/components/MarketCard";
 import EventCard from "@/components/EventCard";
 import FeaturedCarousel, { FeaturedItem } from "@/components/FeaturedCarousel";
+import InternalBannerCarousel from "@/components/InternalBannerCarousel";
 import { AdBanner } from "@/components/AdBanner";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
@@ -69,8 +70,9 @@ export default function Home() {
         userBets = bets || [];
       }
 
+      let enhancedMkts: any[] = [];
       if (mkts) {
-        let enhancedMkts = mkts.map((m: any) => {
+        enhancedMkts = mkts.map((m: any) => {
            const total = m.yes_pool + m.no_pool;
            const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
            const noProb = total > 0 ? 100 - yesProb : 50;
@@ -104,13 +106,19 @@ export default function Home() {
       
       let fItems: FeaturedItem[] = [];
       if (evts) {
-        setEvents(evts);
-        fItems = [...fItems, ...evts.filter((e:any) => e.is_featured).map((e:any) => ({
+        const enrichedEvents = evts.map((e: any) => {
+           const eventMkts = enhancedMkts ? enhancedMkts.filter((m: any) => m.event_id === e.id).sort((a: any, b: any) => b.yesProb - a.yesProb) : [];
+           return { ...e, markets: eventMkts };
+        });
+        setEvents(enrichedEvents);
+        
+        fItems = [...fItems, ...enrichedEvents.filter(e => e.is_featured).map(e => ({
           id: e.id,
           type: 'event' as const,
           title: e.title,
           description: e.description,
-          emoji: '🎉'
+          emoji: '🎉',
+          markets: e.markets
         }))];
       } else {
         setEvents([]);
@@ -118,8 +126,7 @@ export default function Home() {
 
       if (mkts) {
         // Also add featured markets
-        const activeMkts = mkts.filter((m:any) => m.status === 'active');
-        fItems = [...fItems, ...activeMkts.filter((m:any) => m.is_featured).map((m:any) => {
+        fItems = [...fItems, ...mkts.filter((m:any) => m.is_featured).map((m:any) => {
           const total = m.yes_pool + m.no_pool;
           const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
           const noProb = total > 0 ? 100 - yesProb : 50;
@@ -216,113 +223,28 @@ export default function Home() {
     ? markets
     : markets.filter(m => m.category === filter);
 
-  const stats = [
-    { label: "활성 마켓", value: markets.length, emoji: "📊" },
-    { label: "총 예측 참여", value: "24,891", emoji: "👥" },
-    { label: "오늘 적중률 1위", value: "79.3%", emoji: "🏆" },
-    { label: "지급된 기프티콘", value: "1,204건", emoji: "🎁" },
-  ];
-
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
       <Navbar points={points} xp={xp} streak={streak} />
 
-      {/* Hero Section */}
-      <section style={{
-        paddingTop: 100, paddingBottom: 40, paddingLeft: 20, paddingRight: 20,
-        maxWidth: 1200, margin: "0 auto"
-      }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 32 }}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            style={{ maxWidth: 600 }}
-          >
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              background: "var(--bg-card)", border: "1px solid var(--border)",
-              borderRadius: 4, padding: "6px 12px", marginBottom: 24
-            }}>
-              <span className="pulse-dot" style={{
-                width: 8, height: 8, borderRadius: "50%",
-                background: "var(--accent-yes)", display: "inline-block"
-              }} />
-              <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700 }}>
-                실시간 예측 마켓 운영 중
-              </span>
-            </div>
+      {/* Featured Carousel (Moved to Top) */}
+      <div style={{ paddingTop: 80, paddingBottom: 20 }}>
+        {featuredItems.length > 0 && (
+          <section style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
+            <FeaturedCarousel items={featuredItems} />
+          </section>
+        )}
+      </div>
 
-            <h1 style={{ fontSize: "clamp(32px, 6vw, 56px)", fontWeight: 900, lineHeight: 1.1, marginBottom: 20, letterSpacing: "-0.04em", color: "var(--text-primary)" }}>
-              세상의 모든 이슈,<br />
-              당신의 예측이<br />
-              가치가 됩니다
-            </h1>
-
-            <p style={{ color: "var(--text-secondary)", fontSize: 18, lineHeight: 1.6, marginBottom: 32 }}>
-              광고 포인트로 예측에 참여하고, 적중하면 기프티콘으로 교환하세요.<br/>
-              가입비·결제 없이 누구나 참여할 수 있습니다.
-            </p>
-
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-              <motion.button
-                style={{ background: "var(--purple-primary)", color: "white", padding: "14px 28px", fontSize: 16, minWidth: 160, border: "none", borderRadius: 6, fontWeight: 700, cursor: "pointer" }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={claimDaily}
-              >
-                {dailyClaimed ? "✅ 출석 완료" : "🌅 출석 체크 +P"}
-              </motion.button>
-              <Link href="/guide" style={{ textDecoration: "none" }}>
-                <motion.button
-                  style={{
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 6, padding: "14px 28px",
-                    color: "var(--text-primary)", fontSize: 16, fontWeight: 700, cursor: "pointer",
-                    minWidth: 160
-                  }}
-                  whileHover={{ scale: 1.02, background: "var(--bg-card-hover)" }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  📖 이용 가이드 읽기
-                </motion.button>
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Stats bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          style={{
-            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-            gap: 12, marginTop: 40
-          }}
-        >
-          {stats.map((s, i) => (
-            <div key={i} className="glass-card" style={{ padding: "16px", textAlign: "center" }}>
-              <div style={{ fontSize: 22, marginBottom: 4 }}>{s.emoji}</div>
-              <div style={{ fontWeight: 800, fontSize: 18, color: "var(--text-primary)" }}>{s.value}</div>
-              <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>{s.label}</div>
-            </div>
-          ))}
-        </motion.div>
+      {/* Internal Event Banners */}
+      <section style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
+        <InternalBannerCarousel claimDaily={claimDaily} dailyClaimed={dailyClaimed} />
       </section>
 
       {/* Ad Banner */}
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px 20px" }}>
         <AdBanner type="horizontal" />
       </div>
-
-      {/* Featured Carousel */}
-      {featuredItems.length > 0 && (
-        <section style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
-          <FeaturedCarousel items={featuredItems} />
-        </section>
-      )}
 
       {/* Markets Section */}
       <section style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px 80px" }}>

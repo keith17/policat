@@ -41,9 +41,28 @@ export default function EventCard({ event, index }: { event: any, index: number 
       </h3>
       
       {event.description && (
-        <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 24, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+        <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           {event.description}
         </p>
+      )}
+
+      {event.markets && event.markets.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, background: "var(--bg-secondary)", padding: 12, borderRadius: 8 }}>
+          {event.markets.slice(0, 3).map((m: any, i: number) => (
+            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700 }}>{i + 1}</span>
+                <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{m.title}</span>
+              </div>
+              <span style={{ color: "var(--accent-yes)", fontWeight: 800 }}>{m.yesProb}%</span>
+            </div>
+          ))}
+          {event.markets.length > 3 && (
+            <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginTop: 4 }}>
+              +{event.markets.length - 3}명 더보기
+            </div>
+          )}
+        </div>
       )}
 
       <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
