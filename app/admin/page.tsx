@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
-import { ShieldAlert, Users, TrendingUp, Lock, Coins, EyeOff, CheckCircle, Star, Calendar } from "lucide-react";
+import { ShieldAlert, Users, TrendingUp, Lock, Coins, EyeOff, CheckCircle, Star, Calendar, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatPoints, getTier, tierConfig } from "@/lib/data";
 
@@ -166,6 +166,21 @@ export default function AdminDashboard() {
     setMarkets(prev => prev.map(m => m.id === refundModal.marketId ? { ...m, status: "hidden" } : m));
     setRefundModal(null);
     setRefundReason("");
+  };
+
+  const handleEventAction = async (eventId: string, newStatus: string) => {
+    if (!confirm(`이 이벤트를 ${newStatus === 'hidden' ? '숨김' : '활성'} 처리하시겠습니까?`)) return;
+    
+    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e));
+    
+    const { error } = await supabase.from("events").update({ status: newStatus }).eq("id", eventId);
+    if (error) {
+      showToast(`에러: ${error.message}`, "warn");
+      const { data: evts } = await supabase.from("events").select("*").order("created_at", { ascending: false });
+      if (evts) setEvents(evts);
+    } else {
+      showToast(`이벤트가 성공적으로 ${newStatus === 'hidden' ? '숨겨졌' : '활성화되었'}습니다.`, "success");
+    }
   };
 
   return (
@@ -407,6 +422,22 @@ export default function AdminDashboard() {
                       >
                         <Star size={16} fill={ev.is_featured ? "#eab308" : "none"} /> Featured
                       </button>
+
+                      {ev.status !== 'hidden' ? (
+                        <button 
+                          onClick={() => handleEventAction(ev.id, 'hidden')}
+                          style={{ padding: "8px 16px", borderRadius: 8, background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", color: "var(--accent-no)", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                        >
+                          <EyeOff size={16} /> 숨김
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleEventAction(ev.id, 'active')}
+                          style={{ padding: "8px 16px", borderRadius: 8, background: "rgba(34,211,160,0.1)", border: "1px solid rgba(34,211,160,0.3)", color: "var(--accent-yes)", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                        >
+                          <Eye size={16} /> 복구
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
