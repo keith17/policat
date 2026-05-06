@@ -183,6 +183,53 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeduplicate = async () => {
+    if (!confirm("중복된 이벤트와 마켓을 정리하시겠습니까? (이름이 같은 항목 중 가장 처음 생성된 것만 남기고 삭제합니다)")) return;
+    
+    // Events
+    const { data: evts } = await supabase.from("events").select("id, title, created_at").order("created_at", { ascending: true });
+    if (evts) {
+      const titleMap: Record<string, string[]> = {};
+      for (const ev of evts) {
+        if (!titleMap[ev.title]) titleMap[ev.title] = [];
+        titleMap[ev.title].push(ev.id);
+      }
+      for (const [title, ids] of Object.entries(titleMap)) {
+        if (ids.length > 1) {
+          const toDelete = ids.slice(1);
+          for (const id of toDelete) {
+            await supabase.from("events").delete().eq("id", id);
+          }
+        }
+      }
+    }
+
+    // Markets
+    const { data: mkts } = await supabase.from("markets").select("id, title, created_at").order("created_at", { ascending: true });
+    if (mkts) {
+      const titleMap: Record<string, string[]> = {};
+      for (const m of mkts) {
+        if (!titleMap[m.title]) titleMap[m.title] = [];
+        titleMap[m.title].push(m.id);
+      }
+      for (const [title, ids] of Object.entries(titleMap)) {
+        if (ids.length > 1) {
+          const toDelete = ids.slice(1);
+          for (const id of toDelete) {
+            await supabase.from("markets").delete().eq("id", id);
+          }
+        }
+      }
+    }
+
+    showToast("중복 데이터 정리가 완료되었습니다.", "success");
+    // Refresh Data
+    const { data: newEvts } = await supabase.from("events").select("*").order("created_at", { ascending: false });
+    if (newEvts) setEvents(newEvts);
+    const { data: newMkts } = await supabase.from("markets").select("*").order("created_at", { ascending: false });
+    if (newMkts) setMarkets(newMkts);
+  };
+
   return (
     <div className="animated-bg" style={{ minHeight: "100vh" }}>
       <Navbar points={1530000} streak={100} />
@@ -403,6 +450,13 @@ export default function AdminDashboard() {
                   <input type="text" placeholder="설명 (선택)" value={newEvent.description} onChange={e => setNewEvent({...newEvent, description: e.target.value})} style={{ flex: 2, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
                   <button onClick={handleCreateEvent} style={{ padding: "10px 20px", background: "var(--purple-primary)", color: "white", borderRadius: 8, fontWeight: 700, border: "none", cursor: "pointer" }}>생성</button>
                 </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 24 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800 }}>이벤트 목록</h3>
+                <button onClick={handleDeduplicate} style={{ padding: "8px 16px", background: "rgba(244,63,94,0.1)", color: "var(--accent-no)", border: "1px solid var(--accent-no)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
+                  🧹 중복 일괄 정리
+                </button>
               </div>
 
               <div>
