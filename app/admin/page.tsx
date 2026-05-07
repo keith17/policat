@@ -198,7 +198,7 @@ export default function AdminDashboard() {
         if (ids.length > 1) {
           const toDelete = ids.slice(1);
           for (const id of toDelete) {
-            await supabase.from("events").delete().eq("id", id);
+            await supabase.from("events").update({ status: 'hidden' }).eq("id", id);
           }
         }
       }
@@ -216,7 +216,7 @@ export default function AdminDashboard() {
         if (ids.length > 1) {
           const toDelete = ids.slice(1);
           for (const id of toDelete) {
-            await supabase.from("markets").delete().eq("id", id);
+            await supabase.from("markets").update({ status: 'hidden' }).eq("id", id);
           }
         }
       }
