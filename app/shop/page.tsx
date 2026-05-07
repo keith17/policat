@@ -54,6 +54,12 @@ export default function ShopPage() {
       return;
     }
 
+    if (xp < 500) {
+      showToast("교환 신청은 분석가 등급(XP 500) 이상부터 가능합니다. 마켓 예측이나 미션으로 경험치를 먼저 모아주세요!", "warn");
+      setBuyModal(null);
+      return;
+    }
+
     if (!contactInfo.trim()) {
       showToast("쿠폰을 수신할 연락처/이메일을 입력해주세요.", "warn");
       return;
