@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Footer from "@/components/Footer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,8 +32,11 @@ export default function RootLayout({
           />
         )}
       </head>
-      <body>
-        {children}
+      <body style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          {children}
+        </div>
+        <Footer />
         <SpeedInsights />
       </body>
     </html>

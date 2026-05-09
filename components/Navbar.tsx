@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { getTier, tierConfig, formatPoints } from "@/lib/data";
 import { Menu, X, LogIn, User, LogOut, FileText, PlusCircle, Settings } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import LoginConsentModal from "./LoginConsentModal";
 
 interface NavbarProps {
   points: number;
@@ -18,20 +19,40 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [consentModalOpen, setConsentModalOpen] = useState(false);
   const supabase = createClient();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
+      checkAndUpdateConsent(user);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      checkAndUpdateConsent(session?.user);
     });
 
     return () => subscription.unsubscribe();
   }, [supabase]);
+
+  const checkAndUpdateConsent = async (currentUser: any) => {
+    if (!currentUser) return;
+    const pendingConsent = localStorage.getItem("policat_pending_consent");
+    if (pendingConsent) {
+      const { marketing } = JSON.parse(pendingConsent);
+      setTimeout(async () => {
+        await supabase.from("profiles").update({ 
+          terms_accepted: true, 
+          marketing_consent: marketing 
+        }).eq("id", currentUser.id);
+        
+        localStorage.removeItem("policat_pending_consent");
+        localStorage.setItem("policat_terms_accepted", "true");
+      }, 2000);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -43,7 +64,21 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogin = async () => {
+  const handleLoginClick = () => {
+    const hasAccepted = localStorage.getItem("policat_terms_accepted");
+    if (hasAccepted === "true") {
+      executeOAuth();
+    } else {
+      setConsentModalOpen(true);
+    }
+  };
+
+  const handleConsentConfirm = (marketingConsent: boolean) => {
+    localStorage.setItem("policat_pending_consent", JSON.stringify({ marketing: marketingConsent }));
+    executeOAuth();
+  };
+
+  const executeOAuth = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -226,7 +261,7 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
           ) : (
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={handleLogin}
+              onClick={handleLoginClick}
               className="btn-primary"
               style={{ display: "flex", alignItems: "center", gap: 6 }}
             >
@@ -297,6 +332,12 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <LoginConsentModal 
+        isOpen={consentModalOpen} 
+        onClose={() => setConsentModalOpen(false)} 
+        onConfirm={handleConsentConfirm} 
+      />
     </nav>
   );
 }
