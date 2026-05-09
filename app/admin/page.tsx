@@ -31,7 +31,15 @@ export default function AdminDashboard() {
   const [markets, setMarkets] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+
   const supabase = createClient();
+
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "warn" } | null>(null);
+
+  const showToast = (msg: string, type: "success" | "warn" = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   useEffect(() => {
     async function loadAdminData() {
@@ -566,6 +574,18 @@ export default function AdminDashboard() {
                 <button onClick={executeRefund} style={{ flex: 1, padding: 14, borderRadius: 10, border: "none", background: "var(--accent-no)", color: "white", fontWeight: 700, cursor: "pointer" }}>숨김 및 환불 승인</button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            style={{ position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)", zIndex: 300, background: toast.type === "success" ? "linear-gradient(135deg, #059669, #22d3a0)" : "linear-gradient(135deg, #be123c, #f43f5e)", borderRadius: 14, padding: "14px 24px", color: "white", fontWeight: 700, fontSize: 15, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }}
+          >
+            {toast.msg}
           </motion.div>
         )}
       </AnimatePresence>
