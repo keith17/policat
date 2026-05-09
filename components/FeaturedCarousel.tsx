@@ -120,7 +120,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -50 }}
           transition={{ duration: 0.4 }}
-          className="p-6 md:p-10 min-h-[220px] flex flex-col justify-center"
+          style={{ padding: "32px 24px 64px 24px", minHeight: 220, display: "flex", flexDirection: "column", justifyContent: "center" }}
         >
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <span style={{ 
@@ -142,7 +142,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
             </p>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start sm:items-center">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 32, alignItems: "center" }}>
             <div style={{ flex: 1 }}>
               {!isEvent && currentItem.yesProb !== undefined && (
                 <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
@@ -156,16 +156,21 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
               )}
 
               {isEvent && currentItem.markets && currentItem.markets.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
                   {currentItem.markets.slice(0, 3).map((m: any, i: number) => {
                     const color = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ec4899", "#f43f5e"][i%6];
                     return (
-                      <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, background: "rgba(0,0,0,0.1)", padding: "6px 12px", borderRadius: 8 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
-                          <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{m.title}</span>
+                      <div key={m.id} style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, background: "rgba(0,0,0,0.05)", padding: "10px 14px", borderRadius: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ width: 18, height: 18, borderRadius: "50%", background: color, color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800 }}>{i + 1}</span>
+                            <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>{m.title}</span>
+                          </div>
+                          <span style={{ color: color, fontWeight: 900 }}>{m.yesProb}%</span>
                         </div>
-                        <span style={{ color: color, fontWeight: 800 }}>{m.yesProb}%</span>
+                        <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
+                          <motion.div initial={{ width: 0 }} animate={{ width: `${m.yesProb}%` }} transition={{ duration: 1 }} style={{ height: "100%", background: color }} />
+                        </div>
                       </div>
                     );
                   })}

@@ -49,12 +49,17 @@ export default function EventCard({ event, index }: { event: any, index: number 
       {event.markets && event.markets.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, background: "var(--bg-secondary)", padding: 12, borderRadius: 8 }}>
           {event.markets.slice(0, 3).map((m: any, i: number) => (
-            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700 }}>{i + 1}</span>
-                <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{m.title}</span>
+            <div key={m.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ background: "var(--purple-primary)", color: "white", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", fontSize: 10, fontWeight: 800 }}>{i + 1}</span>
+                  <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{m.title}</span>
+                </div>
+                <span style={{ color: "var(--purple-primary)", fontWeight: 800 }}>{m.yesProb}%</span>
               </div>
-              <span style={{ color: "var(--accent-yes)", fontWeight: 800 }}>{m.yesProb}%</span>
+              <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
+                <motion.div initial={{ width: 0 }} animate={{ width: `${m.yesProb}%` }} transition={{ duration: 1 }} style={{ height: "100%", background: "var(--purple-primary)" }} />
+              </div>
             </div>
           ))}
           {event.markets.length > 3 && (
