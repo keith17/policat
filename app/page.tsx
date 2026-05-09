@@ -283,7 +283,7 @@ export default function Home() {
         </div>
 
         {/* Market Grid */}
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))" }}>
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))" }}>
           {filter === "all" && events.map((event, i) => (
             <EventCard key={`evt-${event.id}`} event={event} index={i} />
           ))}

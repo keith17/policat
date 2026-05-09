@@ -131,7 +131,7 @@ export default function ShopPage() {
         )}
 
         {/* Shop Grid */}
-        <div className="grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))" }}>
+        <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))" }}>
           {shopItems.map(item => (
             <motion.div 
               key={item.id}
