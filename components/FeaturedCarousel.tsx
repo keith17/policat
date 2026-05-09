@@ -120,7 +120,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -50 }}
           transition={{ duration: 0.4 }}
-          style={{ padding: "40px 32px", minHeight: 220, display: "flex", flexDirection: "column", justifyContent: "center" }}
+          className="p-6 md:p-10 min-h-[220px] flex flex-col justify-center"
         >
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <span style={{ 
@@ -142,7 +142,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
             </p>
           )}
 
-          <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
+          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start sm:items-center">
             <div style={{ flex: 1 }}>
               {!isEvent && currentItem.yesProb !== undefined && (
                 <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>

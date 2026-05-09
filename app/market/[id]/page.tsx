@@ -177,7 +177,7 @@ export default function MarketDetailPage() {
           <span style={{ color: "var(--text-primary)" }}>상세</span>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24, alignItems: "start" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
           {/* Left Column */}
           <div>
             {/* Market Header */}

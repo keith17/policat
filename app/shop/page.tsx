@@ -118,16 +118,12 @@ export default function ShopPage() {
 
         {/* User Balance */}
         {user && (
-          <div style={{
-            background: "var(--bg-card)", border: "1px solid var(--border)",
-            borderRadius: 8, padding: "24px 32px", display: "flex", justifyContent: "space-between", alignItems: "center",
-            marginBottom: 40, flexWrap: "wrap", gap: 16
-          }}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl mb-10 gap-4">
             <div>
               <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 4 }}>현재 교환 가능한 잔여 포인트</div>
               <div style={{ fontSize: 32, fontWeight: 900, color: "var(--purple-primary)" }}>{formatPoints(points)}</div>
             </div>
-            <div style={{ textAlign: "right" }}>
+            <div className="text-left sm:text-right mt-2 sm:mt-0">
               <div style={{ fontSize: 12, color: "var(--text-muted)" }}>💡 안심하세요!</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-secondary)" }}>상점을 이용해 포인트가 차감되어도<br/>티어(경험치)는 절대 강등되지 않습니다.</div>
             </div>
@@ -135,9 +131,7 @@ export default function ShopPage() {
         )}
 
         {/* Shop Grid */}
-        <div style={{
-          display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20
-        }}>
+        <div className="grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))" }}>
           {shopItems.map(item => (
             <motion.div 
               key={item.id}
