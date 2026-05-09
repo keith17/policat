@@ -284,18 +284,37 @@ export default function Home() {
 
         {/* Market Grid */}
         <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))" }}>
-          {filter === "all" && events.map((event, i) => (
-            <EventCard key={`evt-${event.id}`} event={event} index={i} />
-          ))}
-          {filteredMarkets.map((market, i) => (
-            <MarketCard
-              key={`mkt-${market.id}`}
-              market={market}
-              onBet={handleBet}
-              userPoints={points}
-              index={i + (filter === "all" ? events.length : 0)}
-            />
-          ))}
+          {(() => {
+            const gridItems = [
+              ...(filter === "all" ? events.map((e, i) => ({ type: "event", data: e, index: i })) : []),
+              ...filteredMarkets.map((m, i) => ({ type: "market", data: m, index: i }))
+            ];
+
+            return gridItems.map((item, globalIndex) => {
+              // 9번째 아이템마다(PC 기준 약 3줄) 광고 삽입
+              const showAd = globalIndex > 0 && globalIndex % 9 === 0;
+              
+              return (
+                <div key={`grid-item-${globalIndex}`} style={{ display: "contents" }}>
+                  {showAd && (
+                    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                      <AdBanner type="square" className="glass-card" />
+                    </div>
+                  )}
+                  {item.type === "event" ? (
+                    <EventCard event={item.data} index={item.index} />
+                  ) : (
+                    <MarketCard
+                      market={item.data}
+                      onBet={handleBet}
+                      userPoints={points}
+                      index={item.index + (filter === "all" ? events.length : 0)}
+                    />
+                  )}
+                </div>
+              );
+            });
+          })()}
         </div>
 
         {/* Bottom Ad */}
