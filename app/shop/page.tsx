@@ -118,12 +118,23 @@ export default function ShopPage() {
 
         {/* User Balance */}
         {user && (
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl mb-10 gap-4">
+          <div style={{ 
+            display: "flex", 
+            flexWrap: "wrap",
+            justifyContent: "space-between", 
+            alignItems: "center", 
+            padding: 24, 
+            background: "var(--bg-card)", 
+            border: "1px solid var(--border)", 
+            borderRadius: 12, 
+            marginBottom: 40,
+            gap: 16
+          }}>
             <div>
               <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 4 }}>현재 교환 가능한 잔여 포인트</div>
               <div style={{ fontSize: 32, fontWeight: 900, color: "var(--purple-primary)" }}>{formatPoints(points)}</div>
             </div>
-            <div className="text-left sm:text-right mt-2 sm:mt-0">
+            <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 12, color: "var(--text-muted)" }}>💡 안심하세요!</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-secondary)" }}>상점을 이용해 포인트가 차감되어도<br/>티어(경험치)는 절대 강등되지 않습니다.</div>
             </div>
