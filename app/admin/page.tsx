@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
-import { ShieldAlert, Users, TrendingUp, Lock, Coins, EyeOff, CheckCircle, Star, Calendar, Eye } from "lucide-react";
+import { ShieldAlert, Users, TrendingUp, Lock, Coins, EyeOff, CheckCircle, Star, Calendar, Eye, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatPoints, getTier, tierConfig } from "@/lib/data";
 
@@ -25,12 +25,13 @@ interface MockMarket {
 export default function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"users" | "markets" | "orders" | "events">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "markets" | "orders" | "events" | "notices">("users");
 
   const [users, setUsers] = useState<any[]>([]);
   const [markets, setMarkets] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [notices, setNotices] = useState<any[]>([]);
 
   const supabase = createClient();
 
@@ -60,6 +61,10 @@ export default function AdminDashboard() {
         // Fetch events
         const { data: evts } = await supabase.from("events").select("*").order("created_at", { ascending: false });
         if (evts) setEvents(evts);
+
+        // Fetch notices
+        const { data: ntc } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
+        if (ntc) setNotices(ntc);
       }
       setLoading(false);
     }
@@ -73,6 +78,7 @@ export default function AdminDashboard() {
   const [refundModal, setRefundModal] = useState<{ marketId: string; title: string, total: number } | null>(null);
   const [refundReason, setRefundReason] = useState("");
   const [newEvent, setNewEvent] = useState({ title: "", description: "" });
+  const [newNotice, setNewNotice] = useState({ title: "", content: "" });
 
   // (Data loading moved up)
 
@@ -140,6 +146,28 @@ export default function AdminDashboard() {
   const toggleEventFeatured = async (id: string, current: boolean) => {
     await supabase.from("events").update({ is_featured: !current }).eq("id", id);
     setEvents(prev => prev.map(e => e.id === id ? { ...e, is_featured: !current } : e));
+  };
+
+  const handleCreateNotice = async () => {
+    if (!newNotice.title || !newNotice.content) return;
+    const { data } = await supabase.from("announcements").insert([newNotice]).select();
+    if (data && data.length > 0) {
+      setNotices(prev => [data[0], ...prev]);
+      setNewNotice({ title: "", content: "" });
+      showToast("공지사항이 등록되었습니다.", "success");
+    }
+  };
+
+  const toggleNoticeActive = async (id: string, current: boolean) => {
+    await supabase.from("announcements").update({ is_active: !current }).eq("id", id);
+    setNotices(prev => prev.map(n => n.id === id ? { ...n, is_active: !current } : n));
+  };
+
+  const handleDeleteNotice = async (id: string) => {
+    if (!confirm("정말 이 공지사항을 삭제하시겠습니까?")) return;
+    await supabase.from("announcements").delete().eq("id", id);
+    setNotices(prev => prev.filter(n => n.id !== id));
+    showToast("삭제되었습니다.", "success");
   };
 
   const handleCompleteOrder = async (id: string) => {
@@ -293,6 +321,17 @@ export default function AdminDashboard() {
             }}
           >
             <Calendar size={18} /> 이벤트 관리
+          </button>
+          <button 
+            onClick={() => setActiveTab("notices")}
+            style={{
+              padding: "12px 24px", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s", border: "none",
+              background: activeTab === "notices" ? "var(--purple-primary)" : "var(--bg-card)",
+              color: activeTab === "notices" ? "white" : "var(--text-secondary)",
+            }}
+          >
+            <Bell size={18} /> 공지사항 관리
           </button>
         </div>
 
@@ -504,6 +543,52 @@ export default function AdminDashboard() {
                   </div>
                 ))}
                 {events.length === 0 && <div style={{ color: "var(--text-muted)", textAlign: "center", padding: 40 }}>등록된 이벤트가 없습니다.</div>}
+              </div>
+            </div>
+          ) : activeTab === "notices" ? (
+            <div style={{ padding: 20 }}>
+              <div style={{ background: "var(--bg-secondary)", borderRadius: 12, padding: 20, marginBottom: 24 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 16 }}>신규 공지사항 등록</h3>
+                <input 
+                  type="text" placeholder="공지 제목" 
+                  value={newNotice.title} onChange={e => setNewNotice({...newNotice, title: e.target.value})}
+                  style={{ width: "100%", padding: 14, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", marginBottom: 12 }}
+                />
+                <textarea 
+                  placeholder="공지 내용" 
+                  value={newNotice.content} onChange={e => setNewNotice({...newNotice, content: e.target.value})}
+                  style={{ width: "100%", padding: 14, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", minHeight: 120, resize: "vertical", marginBottom: 12 }}
+                />
+                <button onClick={handleCreateNotice} style={{ background: "var(--purple-primary)", color: "white", padding: "12px 24px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer" }}>
+                  등록하기
+                </button>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {notices.map(n => (
+                  <div key={n.id} style={{ background: "var(--bg-primary)", borderRadius: 12, border: `1px solid ${n.is_active ? 'var(--purple-primary)' : 'var(--border)'}`, padding: 20, opacity: n.is_active ? 1 : 0.6 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                      <div>
+                        <h4 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px" }}>
+                          {n.is_active ? "🟢 " : "🔴 "}{n.title}
+                        </h4>
+                        <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{new Date(n.created_at).toLocaleString('ko-KR')}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => toggleNoticeActive(n.id, n.is_active)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--surface-alt)", fontSize: 13, cursor: "pointer" }}>
+                          {n.is_active ? "비활성화" : "활성화"}
+                        </button>
+                        <button onClick={() => handleDeleteNotice(n.id)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--accent-no)", background: "rgba(244,63,94,0.1)", color: "var(--accent-no)", fontSize: 13, cursor: "pointer" }}>
+                          삭제
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                      {n.content}
+                    </div>
+                  </div>
+                ))}
+                {notices.length === 0 && <div style={{ color: "var(--text-muted)", textAlign: "center", padding: 40 }}>등록된 공지사항이 없습니다.</div>}
               </div>
             </div>
           ) : null}

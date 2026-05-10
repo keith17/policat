@@ -32,6 +32,7 @@ export default function Footer() {
             <li><Link href="/" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14 }}>마켓 둘러보기</Link></li>
             <li><Link href="/leaderboard" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14 }}>랭킹 리더보드</Link></li>
             <li><Link href="/shop" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14 }}>포인트 상점</Link></li>
+            <li><Link href="/notices" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 700 }}>공지사항</Link></li>
             <li><Link href="/guide" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14 }}>이용 안내 (가이드)</Link></li>
           </ul>
         </div>
