@@ -83,6 +83,7 @@ export default function Home() {
              id: m.id,
              title: m.title,
              category: m.category,
+             event_id: m.event_id,
              categoryLabel: m.category === 'economy' ? '경제' : m.category === 'politics' ? '정치' : m.category === 'society' ? '사회' : '스포츠',
              emoji: m.category === 'economy' ? '📈' : m.category === 'politics' ? '🏛️' : m.category === 'society' ? '🤝' : '⚽',
              yesProb, noProb,

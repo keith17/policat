@@ -54,6 +54,9 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
 
       if (marketIds.length > 0) {
         const { data: allBets } = await supabase.from('bets').select('*').in('market_id', marketIds).order('created_at', { ascending: true });
+        
+        const trend: TrendData[] = [];
+        
         if (allBets && allBets.length > 0) {
           const dailyData = new Map<string, any>();
           const currentPools: Record<string, { yes: number, no: number }> = {};
@@ -86,16 +89,33 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
           });
 
           let lastKnown: Record<string, any> = {};
-          const trend: TrendData[] = [];
           Array.from(dailyData.keys()).sort().forEach(date => {
             const merged = { ...lastKnown, ...dailyData.get(date) };
             trend.push(merged as TrendData);
             lastKnown = { ...merged };
             delete lastKnown.date;
           });
-
-          setTrendData(prev => ({ ...prev, [current.id]: trend }));
         }
+        
+        if (trend.length === 0) {
+          const today = new Date().toISOString().split('T')[0];
+          const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+          const pt1: any = { date: yesterday };
+          const pt2: any = { date: today };
+          if (current.type === 'market') {
+            pt1["YES"] = current.yesProb || 50; pt2["YES"] = current.yesProb || 50;
+          } else if (current.markets) {
+            current.markets.forEach((m: any) => {
+              pt1[m.title] = m.yesProb || 50; pt2[m.title] = m.yesProb || 50;
+            });
+          }
+          trend.push(pt1, pt2);
+        } else if (trend.length === 1) {
+          const yesterday = new Date(new Date(trend[0].date).getTime() - 86400000).toISOString().split('T')[0];
+          trend.unshift({ ...trend[0], date: yesterday });
+        }
+
+        setTrendData(prev => ({ ...prev, [current.id]: trend }));
       }
     };
     fetchTrend();
