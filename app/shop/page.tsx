@@ -12,6 +12,8 @@ export default function ShopPage() {
   const [xp, setXp] = useState(0);
   const [loading, setLoading] = useState(true);
   const [buyModal, setBuyModal] = useState<any>(null);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [contactInfo, setContactInfo] = useState("");
   const [toast, setToast] = useState<{ msg: string; type: "success" | "warn" } | null>(null);
 
@@ -26,6 +28,7 @@ export default function ShopPage() {
         if (profile) {
           setPoints(profile.points);
           setXp(profile.xp !== undefined ? profile.xp : profile.points);
+          setIsVerified(!!profile.is_verified);
         }
       }
       setLoading(false);
@@ -63,6 +66,62 @@ export default function ShopPage() {
     if (!contactInfo.trim()) {
       showToast("쿠폰을 수신할 연락처/이메일을 입력해주세요.", "warn");
       return;
+    }
+
+    if (!isVerified) {
+      if (!window.confirm("상품 교환을 위해 최초 1회 휴대폰 본인인증이 필요합니다. 인증을 진행하시겠습니까?")) return;
+      
+      try {
+        setIsVerifying(true);
+        const PortOne = await import("@portone/browser-sdk/v2");
+        const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
+        const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
+        
+        if (!storeId || !channelKey) {
+          showToast("포트원 설정이 누락되었습니다. 관리자에게 문의하세요.", "warn");
+          setIsVerifying(false);
+          return;
+        }
+
+        const response = await PortOne.requestIdentityVerification({
+          storeId,
+          identityVerificationId: `cert-${crypto.randomUUID()}`,
+          channelKey,
+        });
+
+        if (response.code != null) {
+          showToast(`인증 실패: ${response.message}`, "warn");
+          setIsVerifying(false);
+          return;
+        }
+
+        // 서버에 인증 검증 및 DB 저장 요청
+        const verifyRes = await fetch("/api/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            identityVerificationId: response.identityVerificationId,
+            userId: user.id
+          })
+        });
+
+        const verifyData = await verifyRes.json();
+        if (!verifyRes.ok || !verifyData.success) {
+          showToast(`인증 처리 오류: ${verifyData.message}`, "warn");
+          setIsVerifying(false);
+          return;
+        }
+
+        setIsVerified(true);
+        showToast("본인인증이 완료되었습니다. 교환 처리를 진행합니다.", "success");
+      } catch (err: any) {
+        console.error(err);
+        showToast("인증 진행 중 오류가 발생했습니다.", "warn");
+        setIsVerifying(false);
+        return;
+      } finally {
+        setIsVerifying(false);
+      }
     }
 
     const newPoints = points - buyModal.price;
@@ -240,9 +299,11 @@ export default function ShopPage() {
                 <motion.button
                   onClick={handleBuy}
                   whileTap={{ scale: 0.97 }}
-                  style={{ flex: 1, padding: "14px", borderRadius: 8, background: "var(--purple-primary)", border: "none", color: "white", fontSize: 15, fontWeight: 800, cursor: "pointer" }}
+                  style={{ width: "100%", padding: 14, borderRadius: 8, border: "none", background: "var(--purple-primary)", color: "white", fontWeight: 800, fontSize: 16, cursor: "pointer", transition: "all 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+                  onMouseLeave={e => e.currentTarget.style.opacity = "1"}
                 >
-                  교환 신청
+                  {isVerifying ? "인증 및 교환 처리 중..." : "확인 및 교환하기"}
                 </motion.button>
               </div>
             </motion.div>
