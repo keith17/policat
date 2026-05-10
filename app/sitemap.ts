@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
+export const revalidate = 0; // 항상 최신 DB 데이터를 기반으로 sitemap 생성
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://policat.kr'; // 향후 실제 도메인으로 변경하세요.
 
