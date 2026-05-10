@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Instagram, Twitter, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 
 export default function Footer() {
   return (
