@@ -19,7 +19,7 @@ export default function Footer() {
             세상의 모든 이슈를 예측하고 즐기는<br />광고 기반 무료 예측 마켓 플랫폼
           </p>
           <div style={{ display: "flex", gap: 12 }}>
-            <a href="mailto:koesig@gmail.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-secondary)", background: "var(--surface-alt)", padding: 8, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+            <a href="mailto:tlw.seoul@gmail.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-secondary)", background: "var(--surface-alt)", padding: 8, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
               <Mail size={18} />
             </a>
           </div>
@@ -43,7 +43,7 @@ export default function Footer() {
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
             <li><Link href="/tos" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14 }}>서비스 이용약관</Link></li>
             <li><Link href="/privacy" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 700 }}>개인정보 처리방침</Link></li>
-            <li><a href="mailto:koesig@gmail.com" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14 }}>제휴 및 문의</a></li>
+            <li><a href="mailto:tlw.seoul@gmail.com" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14 }}>제휴 및 문의</a></li>
           </ul>
         </div>
       </div>
