@@ -89,6 +89,12 @@ export default function ShopPage() {
           channelKey,
         });
 
+        if (!response) {
+          showToast("인증이 취소되었거나 실패했습니다.", "warn");
+          setIsVerifying(false);
+          return;
+        }
+
         if (response.code != null) {
           showToast(`인증 실패: ${response.message}`, "warn");
           setIsVerifying(false);
