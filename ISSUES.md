@@ -61,3 +61,17 @@
 - **할 일**:
   - [ ] `/create` 페이지에서 `profiles.is_admin` 체크 후 비어드민 접근 차단
   - [ ] `markets` 테이블 INSERT RLS Policy를 어드민 전용으로 수정
+
+---
+
+## ✅ Issue 8: SEO 최적화 및 공지사항 기능 구현 — **완료**
+- [x] 메타데이터 '정치' 배제 및 경제/스포츠/연예 키워드 설정
+- [x] `sitemap.xml` 및 `robots.txt` 동적 생성 추가
+- [x] 공지사항 테이블(`announcements`) 및 사용자/관리자 UI 추가
+
+---
+
+## ✅ Issue 9: 상점 본인인증(PortOne) 및 어뷰징 방지 — **완료**
+- [x] PortOne V2 모듈 연동 (상점 교환 시 인증 모달)
+- [x] `/api/verify` 백엔드 라우트 생성 (서버단 검증)
+- [x] `profiles` 테이블에 `ci` 컬럼 UNIQUE 제약 조건 추가로 다계정 원천 차단

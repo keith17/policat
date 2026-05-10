@@ -52,6 +52,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | 중첩 댓글 시스템 (대댓글 지원) | ✅ 완료 | `comments` 테이블 기반 커뮤니티 기능 |
 | 초기 마켓/이벤트 실데이터 시딩 | ✅ 완료 | 2026 월드컵 예제 (30일치 시계열 베팅 기록) |
 | 신규 로고(브랜딩) 업데이트 | ✅ 완료 | 파란색/빨간색 원형 및 볼드 텍스트 SVG 적용 |
+| SEO 최적화 및 공지사항 | ✅ 완료 | sitemap, robots 설정 및 공지사항 UI |
+| 상점 상품 교환 본인인증 (PortOne) | ✅ 완료 | CI 기반 다계정 어뷰징 차단 구현 |
 
 ### 🔴 남은 핵심 과제 (GitHub Issues)
 | Issue | 제목 | 우선순위 | 비고 |

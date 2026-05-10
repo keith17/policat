@@ -73,6 +73,11 @@
 | xp | integer | 경험치 (배당금 획득 시만 증가, 상점 구매 시 차감 안 됨) |
 | streak | integer | 연속 출석 일수 |
 | is_admin | boolean | 관리자 여부 |
+| is_verified | boolean | 휴대폰 본인인증 완료 여부 (PortOne) |
+| phone_number | text | 인증된 휴대폰 번호 |
+| real_name | text | 인증된 실명 |
+| ci | text | 연계정보 (UNIQUE 제약, 다계정 어뷰징 차단용) |
+| di | text | 중복가입확인정보 |
 
 ### `markets`
 | 컬럼 | 타입 | 설명 |
