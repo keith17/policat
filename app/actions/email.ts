@@ -4,7 +4,7 @@ import { Resend } from "resend";
 
 const resendApiKey = process.env.RESEND_API_KEY;
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
-const SENDER_EMAIL = "PoliCat <noreply@policat.kr>";
+const SENDER_EMAIL = "Policat <noreply@policat.kr>";
 
 // 1. 마켓 생성 신청 알림 (유저에게 발송)
 export async function sendMarketCreationEmail(toEmail: string, marketTitle: string) {
@@ -13,7 +13,7 @@ export async function sendMarketCreationEmail(toEmail: string, marketTitle: stri
     await resend.emails.send({
       from: SENDER_EMAIL,
       to: toEmail,
-      subject: `[PoliCat] '${marketTitle}' 마켓 제안이 접수되었습니다.`,
+      subject: `[Policat] '${marketTitle}' 마켓 제안이 접수되었습니다.`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #6366f1;">마켓 제안 접수 완료 🎉</h2>
@@ -21,7 +21,7 @@ export async function sendMarketCreationEmail(toEmail: string, marketTitle: stri
           <p>요청하신 <strong>'${marketTitle}'</strong> 마켓의 제안이 성공적으로 접수되었습니다.</p>
           <p>관리자의 승인을 거친 후 정식으로 오픈되며, 반려될 경우 별도 안내해 드립니다.</p>
           <br/>
-          <p>감사합니다.<br/>PoliCat 팀 드림</p>
+          <p>감사합니다.<br/>Policat 팀 드림</p>
         </div>
       `,
     });
@@ -39,7 +39,7 @@ export async function sendShopOrderEmail(toEmail: string, itemName: string) {
     await resend.emails.send({
       from: SENDER_EMAIL,
       to: toEmail,
-      subject: `[PoliCat] '${itemName}' 교환 신청이 완료되었습니다.`,
+      subject: `[Policat] '${itemName}' 교환 신청이 완료되었습니다.`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #6366f1;">상점 교환 신청 완료 🎁</h2>
@@ -47,7 +47,7 @@ export async function sendShopOrderEmail(toEmail: string, itemName: string) {
           <p>포인트 상점에서 <strong>'${itemName}'</strong> 상품 교환을 신청하셨습니다.</p>
           <p>기프티콘 발송은 관리자 확인 후 평일 기준 1~2일 내에 입력하신 연락처/이메일로 전송됩니다.</p>
           <br/>
-          <p>감사합니다.<br/>PoliCat 팀 드림</p>
+          <p>감사합니다.<br/>Policat 팀 드림</p>
         </div>
       `,
     });
@@ -64,8 +64,8 @@ export async function sendMarketApprovalEmail(toEmail: string, marketTitle: stri
   
   const isApproved = status === "active";
   const subject = isApproved 
-    ? `[PoliCat] 제안하신 마켓이 승인되어 오픈되었습니다!`
-    : `[PoliCat] 제안하신 마켓이 반려되었습니다.`;
+    ? `[Policat] 제안하신 마켓이 승인되어 오픈되었습니다!`
+    : `[Policat] 제안하신 마켓이 반려되었습니다.`;
 
   try {
     await resend.emails.send({
@@ -80,7 +80,7 @@ export async function sendMarketApprovalEmail(toEmail: string, marketTitle: stri
           <p><strong>결과:</strong> <span style="color: ${isApproved ? '#22c55e' : '#ef4444'}">${isApproved ? '승인 및 오픈' : '반려(취소)'}</span></p>
           ${reason ? `<p><strong>사유:</strong> ${reason}</p>` : ''}
           <br/>
-          <p>감사합니다.<br/>PoliCat 팀 드림</p>
+          <p>감사합니다.<br/>Policat 팀 드림</p>
         </div>
       `,
     });
@@ -105,7 +105,7 @@ export async function sendMarketSettlementEmails(bettings: any[], marketTitle: s
         return {
           from: SENDER_EMAIL,
           to: bet.profiles.email,
-          subject: `[PoliCat] 참여하신 마켓의 결과가 판정되었습니다.`,
+          subject: `[Policat] 참여하신 마켓의 결과가 판정되었습니다.`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <h2 style="color: #6366f1;">마켓 결과 안내 🏁</h2>
@@ -116,7 +116,7 @@ export async function sendMarketSettlementEmails(bettings: any[], marketTitle: s
               <br/>
               <a href="https://policat.kr/profile/me" style="display: inline-block; padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 6px;">내역 확인하기</a>
               <br/><br/>
-              <p>감사합니다.<br/>PoliCat 팀 드림</p>
+              <p>감사합니다.<br/>Policat 팀 드림</p>
             </div>
           `
         };
