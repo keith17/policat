@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
-import { ShieldAlert, Users, TrendingUp, Lock, Coins, EyeOff, CheckCircle, Star, Calendar, Eye, Bell } from "lucide-react";
+import { ShieldAlert, Users, TrendingUp, Lock, Coins, EyeOff, CheckCircle, Star, Calendar, Eye, Bell, LayoutDashboard, Store, Zap, Megaphone, PlusCircle } from "lucide-react";
+import { sendMarketApprovalEmail, sendMarketSettlementEmails } from "@/app/actions/email";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatPoints, getTier, tierConfig } from "@/lib/data";
 
@@ -114,11 +115,34 @@ export default function AdminDashboard() {
   };
 
   const handleMarketAction = async (id: string, action: MockMarket["status"]) => {
+    const market = markets.find(m => m.id === id);
+    if (!market) return;
+    const creatorEmail = users.find(u => u.id === market.created_by)?.email;
+
     if (action === "resolved_yes" || action === "resolved_no") {
       const side = action === "resolved_yes" ? "yes" : "no";
       await supabase.rpc('resolve_market', { p_market_id: id, p_winning_side: side });
+      
+      // 정산 메일 발송 로직 추가
+      const { data: betsData } = await supabase
+        .from("bets")
+        .select(`
+          user_id, amount, side,
+          profiles ( email, full_name )
+        `)
+        .eq("market_id", id);
+        
+      if (betsData && betsData.length > 0) {
+        sendMarketSettlementEmails(betsData, market.title, side).catch(console.error);
+      }
+      
     } else {
       await supabase.from("markets").update({ status: action }).eq("id", id);
+      
+      // 승인/반려 메일 발송
+      if ((action === "active" || action === "cancelled") && creatorEmail) {
+        sendMarketApprovalEmail(creatorEmail, market.title, action).catch(console.error);
+      }
     }
     setMarkets(prev => prev.map(m => m.id === id ? { ...m, status: action } : m));
   };
