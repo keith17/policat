@@ -43,7 +43,9 @@ export default function CreateMarketPage() {
       title: formData.title,
       category: formData.category,
       created_by: user.id,
-      status: "pending"
+      status: "pending",
+      end_date: new Date(formData.endDate).toISOString(),
+      description: formData.description
     });
 
     if (!error) {
@@ -151,10 +153,10 @@ export default function CreateMarketPage() {
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 140 }}>
-                  <label style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>마감일</label>
+                  <label style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>마감 일시</label>
                   <input 
                     required
-                    type="date"
+                    type="datetime-local"
                     value={formData.endDate}
                     onChange={e => setFormData({ ...formData, endDate: e.target.value })}
                     style={{

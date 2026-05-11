@@ -238,7 +238,7 @@ export default function Home() {
           {filteredMarkets.map((market, i) => (
             <MarketCard
               key={market.id}
-              market={market}
+              market={market as any}
               onBet={handleBet}
               userPoints={points}
               index={i}

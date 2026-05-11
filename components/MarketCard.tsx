@@ -18,6 +18,7 @@ interface Market {
   new: boolean;
   myBet: "yes" | "no" | null;
   myBetAmount?: number;
+  status: "active" | "ended" | "resolved_yes" | "resolved_no";
 }
 
 interface MarketCardProps {
@@ -58,7 +59,7 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
           display: "flex", alignItems: "center", gap: 4,
           fontFamily: "var(--font-mono)"
         }}>
-          ⏰ {market.daysLeft > 0 ? `${market.daysLeft}일 남음` : "종료"}
+          ⏰ {market.status === 'resolved_yes' || market.status === 'resolved_no' ? "종료됨" : market.status === 'ended' ? "결과 대기중" : market.daysLeft > 0 ? `${market.daysLeft}일 남음` : "오늘 마감"}
         </span>
       </div>
 
@@ -126,8 +127,36 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
         <span>👥 {market.participants.toLocaleString()}명</span>
       </div>
 
-      {/* Bet Buttons */}
-      {market.myBet ? (
+      {/* Bet Buttons & Results */}
+      {market.status === "resolved_yes" || market.status === "resolved_no" ? (
+        <div style={{
+          padding: 12,
+          background: "var(--surface-alt)",
+          borderRadius: "var(--radius-md)",
+          display: "flex", flexDirection: "column", gap: 6, alignItems: "center"
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>
+            최종 결과: <span style={{ color: market.status === "resolved_yes" ? "var(--accent-yes)" : "var(--accent-no)" }}>
+              {market.status === "resolved_yes" ? "YES 승리" : "NO 승리"}
+            </span>
+          </div>
+          {market.myBet && (
+            <div style={{ fontSize: 13, color: market.myBet === (market.status.replace('resolved_', '')) ? "#22c55e" : "#ef4444", fontWeight: 700 }}>
+              {market.myBet === (market.status.replace('resolved_', '')) ? "🎉 적중! (배당금 획득)" : "😢 실패"}
+            </div>
+          )}
+        </div>
+      ) : market.status === "ended" ? (
+        <div style={{
+          padding: 12,
+          background: "var(--surface-alt)",
+          borderRadius: "var(--radius-md)",
+          textAlign: "center", fontWeight: 600, color: "var(--text-secondary)", fontSize: 14
+        }}>
+          ⏳ 베팅 마감 (결과 판정 대기중)
+          {market.myBet && <div style={{ fontSize: 13, marginTop: 4 }}>내 예측: {market.myBet.toUpperCase()} ({market.myBetAmount}P)</div>}
+        </div>
+      ) : market.myBet ? (
         <div style={{
           padding: 12,
           background: "var(--surface-alt)",

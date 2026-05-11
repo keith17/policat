@@ -91,6 +91,7 @@
 | status | text | active / pending / resolved_yes / resolved_no / hidden / cancelled |
 | event_id | uuid | events.id 참조 (다중 후보 마켓의 경우) |
 | is_featured | boolean | 상단 캐로셀 노출 여부 |
+| end_date | timestamptz | 마켓 종료(마감) 일시 |
 | created_at | timestamptz | - |
 | resolved_at | timestamptz | 판정 완료 시각 |
 | resolved_by | uuid | 판정한 어드민 ID |

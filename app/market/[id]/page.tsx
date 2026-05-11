@@ -51,13 +51,20 @@ export default function MarketDetailPage() {
         const yesProb = total > 0 ? Math.round((mData.yes_pool / total) * 100) : 50;
         const noProb = total > 0 ? 100 - yesProb : 50;
         
+        const endDateObj = new Date(mData.end_date || mData.created_at);
+        let derivedStatus = mData.status;
+        if (mData.status === "active" && new Date() >= endDateObj) {
+          derivedStatus = "ended";
+        }
+        
         setMarket({
           ...mData,
           categoryLabel: mData.category === 'economy' ? '경제' : mData.category === 'politics' ? '정치' : mData.category === 'society' ? '사회' : '스포츠',
           emoji: mData.category === 'economy' ? '📈' : mData.category === 'politics' ? '🏛️' : mData.category === 'society' ? '🤝' : '⚽',
           yesProb, noProb, totalVolume: total,
-          daysLeft: Math.max(0, 7 - Math.floor((new Date().getTime() - new Date(mData.created_at).getTime()) / (1000 * 60 * 60 * 24))),
-          endDate: mData.created_at
+          daysLeft: Math.max(0, Math.ceil((endDateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))),
+          endDate: mData.end_date || mData.created_at,
+          status: derivedStatus
         });
 
         // Fetch ALL bets for trend graph
@@ -201,7 +208,7 @@ export default function MarketDetailPage() {
                 borderTop: "1px solid var(--border)", paddingTop: 16,
                 color: "var(--text-secondary)", fontSize: 13, fontWeight: 600
               }}>
-                <span>📅 기준 30일 ({market.daysLeft}일 남음)</span>
+                <span>📅 {market.status === 'resolved_yes' || market.status === 'resolved_no' ? "마감됨" : market.status === 'ended' ? "결과 대기중" : market.daysLeft > 0 ? `${market.daysLeft}일 남음` : "오늘 마감"}</span>
                 <span>👥 {Math.floor(market.totalVolume / 100) + 1}명 참여</span>
                 <span>💰 총 {(market.totalVolume / 1000).toFixed(0)}K P 누적</span>
               </div>
@@ -268,7 +275,24 @@ export default function MarketDetailPage() {
             >
               <h2 style={{ fontWeight: 800, fontSize: 16, marginBottom: 16, color: "var(--text-primary)" }}>🎯 예측 참여</h2>
 
-              {userBet ? (
+              {market.status === "resolved_yes" || market.status === "resolved_no" ? (
+                <div style={{ textAlign: "center", padding: 24, background: "var(--bg-secondary)", borderRadius: 8 }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: market.status === "resolved_yes" ? "var(--accent-yes)" : "var(--accent-no)" }}>
+                    최종 결과: {market.status === "resolved_yes" ? "YES 승리" : "NO 승리"}
+                  </div>
+                  {userBet && (
+                    <div style={{ marginTop: 12, fontSize: 14, fontWeight: 700, color: userBet.side === (market.status.replace("resolved_", "")) ? "#22c55e" : "#ef4444" }}>
+                      {userBet.side === (market.status.replace("resolved_", "")) ? "🎉 예측 적중! 배당금을 획득했습니다." : "😢 예측 실패"}
+                    </div>
+                  )}
+                </div>
+              ) : market.status === "ended" ? (
+                <div style={{ textAlign: "center", padding: 24, background: "var(--bg-secondary)", borderRadius: 8, color: "var(--text-secondary)", fontWeight: 700 }}>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
+                  베팅이 마감되었습니다.<br/>결과 판정 대기중입니다.
+                  {userBet && <div style={{ marginTop: 12, fontSize: 13 }}>내 예측: {userBet.side.toUpperCase()} ({userBet.amount}P)</div>}
+                </div>
+              ) : userBet ? (
                 <div style={{
                   textAlign: "center", padding: 24,
                   background: "var(--bg-secondary)",

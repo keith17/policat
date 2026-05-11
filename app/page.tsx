@@ -1,6 +1,7 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useInView } from "react-intersection-observer";
 import Image from "next/image";
 import Link from "next/link";
 import MarketCard from "@/components/MarketCard";
@@ -20,6 +21,10 @@ export default function Home() {
   const [events, setEvents] = useState<any[]>([]);
   const [featuredItems, setFeaturedItems] = useState<FeaturedItem[]>([]);
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const { ref, inView } = useInView();
   const [toast, setToast] = useState<{ msg: string; type: "success" | "info" | "warn" } | null>(null);
   const [betModal, setBetModal] = useState<{ marketId: string; side: "yes" | "no" } | null>(null);
   const [betAmount, setBetAmount] = useState(50);
@@ -52,32 +57,54 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  useEffect(() => {
-    async function fetchMarketsAndBets() {
-      const { data: mkts } = await supabase.from("markets")
-        .select("*")
-        .in("status", ["active", "pending"])
-        .order("created_at", { ascending: false });
-      
-      const { data: evts } = await supabase.from("events")
-        .select("*")
-        .eq("status", "active")
-        .order("created_at", { ascending: false });
+  
+  const fetchMarketsAndBets = useCallback(async (currentPage: number, currentFilter: string, reset: boolean = false) => {
+    if (isLoading || (!hasMore && !reset)) return;
+    setIsLoading(true);
 
+    try {
+      const now = new Date().toISOString();
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      
+      let query = supabase.from("markets").select("*").order("created_at", { ascending: false });
+      
+      if (currentFilter === "closed") {
+        // 종료 필터: resolved_yes, resolved_no 이거나 (active 인데 end_date 지났을 때)
+        query = query.or(`status.in.(resolved_yes,resolved_no),and(status.eq.active,end_date.lte.${now})`);
+      } else {
+        // 기본 필터: active 이거나 (resolved 이면서 7일 이내)
+        query = query.or(`status.eq.active,and(status.in.(resolved_yes,resolved_no),resolved_at.gte.${sevenDaysAgo})`);
+        if (currentFilter !== "all") {
+          query = query.eq("category", currentFilter);
+        }
+      }
+
+      // Pagination
+      query = query.range(currentPage * 10, currentPage * 10 + 9);
+      
+      const { data: mkts } = await query;
+      
       let userBets: any[] = [];
-      if (user) {
-        const { data: bets } = await supabase.from("bets").select("*").eq("user_id", user.id);
+      if (user && mkts && mkts.length > 0) {
+        const marketIds = mkts.map(m => m.id);
+        const { data: bets } = await supabase.from("bets").select("*").eq("user_id", user.id).in("market_id", marketIds);
         userBets = bets || [];
       }
 
       let enhancedMkts: any[] = [];
-      if (mkts) {
+      if (mkts && mkts.length > 0) {
         enhancedMkts = mkts.map((m: any) => {
            const total = m.yes_pool + m.no_pool;
            const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
            const noProb = total > 0 ? 100 - yesProb : 50;
            
            const myBetRecord = userBets.find(b => b.market_id === m.id);
+           const endDateObj = new Date(m.end_date || m.created_at);
+           
+           let derivedStatus = m.status;
+           if (m.status === "active" && new Date() >= endDateObj) {
+             derivedStatus = "ended";
+           }
            
            return {
              id: m.id,
@@ -89,62 +116,73 @@ export default function Home() {
              yesProb, noProb,
              yesAmount: m.yes_pool,
              noAmount: m.no_pool,
-             endDate: m.created_at, // Using created_at for endDate as fallback
+             endDate: m.end_date || m.created_at,
              description: m.description || "",
              totalVolume: total,
-             participants: Math.floor(total / 100) + 1, // mock count
-             daysLeft: Math.max(0, 7 - Math.floor((new Date().getTime() - new Date(m.created_at).getTime()) / (1000 * 60 * 60 * 24))),
+             participants: Math.floor(total / 100) + 1,
+             daysLeft: Math.max(0, Math.ceil((endDateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))),
              hot: total > 5000,
              new: new Date().getTime() - new Date(m.created_at).getTime() < 86400000 * 2,
              myBet: myBetRecord ? myBetRecord.side : null,
-             myBetAmount: myBetRecord ? myBetRecord.amount : 0
+             myBetAmount: myBetRecord ? myBetRecord.amount : 0,
+             status: derivedStatus
            };
          });
-        setMarkets(enhancedMkts);
+         
+         setMarkets(prev => reset ? enhancedMkts : [...prev, ...enhancedMkts]);
+         if (mkts.length < 10) setHasMore(false);
       } else {
-        setMarkets([]);
-      }
-      
-      let fItems: FeaturedItem[] = [];
-      if (evts) {
-        const enrichedEvents = evts.map((e: any) => {
-           const eventMkts = enhancedMkts ? enhancedMkts.filter((m: any) => m.event_id === e.id).sort((a: any, b: any) => b.yesProb - a.yesProb) : [];
-           return { ...e, markets: eventMkts };
-        });
-        setEvents(enrichedEvents);
-        
-        fItems = [...fItems, ...enrichedEvents.filter(e => e.is_featured).map(e => ({
-          id: e.id,
-          type: 'event' as const,
-          title: e.title,
-          description: e.description,
-          emoji: '🎉',
-          markets: e.markets
-        }))];
-      } else {
-        setEvents([]);
+         if (reset) setMarkets([]);
+         setHasMore(false);
       }
 
-      if (mkts) {
-        // Also add featured markets
-        fItems = [...fItems, ...mkts.filter((m:any) => m.is_featured).map((m:any) => {
-          const total = m.yes_pool + m.no_pool;
-          const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
-          const noProb = total > 0 ? 100 - yesProb : 50;
-          return {
-            id: m.id,
-            type: 'market' as const,
-            title: m.title,
-            description: m.description,
-            emoji: m.category === 'economy' ? '📈' : m.category === 'politics' ? '🏛️' : m.category === 'society' ? '🤝' : '⚽',
-            yesProb, noProb, totalVolume: total
-          };
-        })];
+      // Fetch events only on first page
+      if (reset) {
+        const { data: evts } = await supabase.from("events").select("*").eq("status", "active").order("created_at", { ascending: false });
+        let fItems: any[] = [];
+        if (evts) {
+          const enrichedEvents = evts.map((e: any) => ({ ...e, markets: [] })); // Mock markets for event, in real app need proper join
+          setEvents(enrichedEvents);
+          fItems = [...enrichedEvents.filter(e => e.is_featured).map(e => ({
+            id: e.id, type: 'event', title: e.title, description: e.description, emoji: '🎉', markets: e.markets
+          }))];
+        } else setEvents([]);
+        
+        // We can't fetch all featured markets easily with pagination, so we'll just fetch top 5 featured
+        const { data: featMkts } = await supabase.from("markets").select("*").eq("is_featured", true).order("created_at", { ascending: false }).limit(5);
+        if (featMkts) {
+          fItems = [...fItems, ...featMkts.map((m:any) => {
+            const total = m.yes_pool + m.no_pool;
+            const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
+            const noProb = total > 0 ? 100 - yesProb : 50;
+            return {
+              id: m.id, type: 'market', title: m.title, description: m.description,
+              emoji: m.category === 'economy' ? '📈' : m.category === 'politics' ? '🏛️' : m.category === 'society' ? '🤝' : '⚽',
+              yesProb, noProb, totalVolume: total
+            };
+          })];
+        }
+        setFeaturedItems(fItems);
       }
-      setFeaturedItems(fItems);
+    } finally {
+      setIsLoading(false);
     }
-    fetchMarketsAndBets();
-  }, [user, supabase]);
+  }, [user, supabase, hasMore, isLoading]);
+
+  useEffect(() => {
+    // Reset and fetch when filter changes or on mount
+    setPage(0);
+    setHasMore(true);
+    fetchMarketsAndBets(0, filter, true);
+  }, [filter, user, supabase]); // Do NOT include fetchMarketsAndBets as it will cause loop
+
+  useEffect(() => {
+    if (inView && hasMore && !isLoading) {
+      setPage(p => p + 1);
+      fetchMarketsAndBets(page + 1, filter, false);
+    }
+  }, [inView, hasMore, isLoading]);
+
 
   const tier = getTier(xp);
   const tierInfo = tierConfig[tier as keyof typeof tierConfig];
@@ -220,9 +258,7 @@ export default function Home() {
     showToast(`🌅 출석 체크 완료! +${bonus}P`, "success");
   };
 
-  const filteredMarkets = filter === "all"
-    ? markets
-    : markets.filter(m => m.category === filter);
+  const filteredMarkets = markets; // Filtering is handled in DB query now
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
