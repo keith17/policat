@@ -21,6 +21,8 @@ export async function sendMarketCreationEmail(toEmail: string, marketTitle: stri
           <p>요청하신 <strong>'${marketTitle}'</strong> 마켓의 제안이 성공적으로 접수되었습니다.</p>
           <p>관리자의 승인을 거친 후 정식으로 오픈되며, 반려될 경우 별도 안내해 드립니다.</p>
           <br/>
+          <a href="https://policat.kr" style="display: inline-block; padding: 12px 24px; background-color: #6366f1; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">Policat 바로가기</a>
+          <br/><br/>
           <p>감사합니다.<br/>Policat 팀 드림</p>
         </div>
       `,
@@ -47,6 +49,8 @@ export async function sendShopOrderEmail(toEmail: string, itemName: string) {
           <p>포인트 상점에서 <strong>'${itemName}'</strong> 상품 교환을 신청하셨습니다.</p>
           <p>기프티콘 발송은 관리자 확인 후 평일 기준 1~2일 내에 입력하신 연락처/이메일로 전송됩니다.</p>
           <br/>
+          <a href="https://policat.kr/shop" style="display: inline-block; padding: 12px 24px; background-color: #6366f1; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">포인트 상점 가기</a>
+          <br/><br/>
           <p>감사합니다.<br/>Policat 팀 드림</p>
         </div>
       `,
@@ -78,8 +82,9 @@ export async function sendMarketApprovalEmail(toEmail: string, marketTitle: stri
           <p>안녕하세요!</p>
           <p>제안해 주신 <strong>'${marketTitle}'</strong> 마켓에 대한 검토 결과입니다.</p>
           <p><strong>결과:</strong> <span style="color: ${isApproved ? '#22c55e' : '#ef4444'}">${isApproved ? '승인 및 오픈' : '반려(취소)'}</span></p>
-          ${reason ? `<p><strong>사유:</strong> ${reason}</p>` : ''}
           <br/>
+          <a href="https://policat.kr" style="display: inline-block; padding: 12px 24px; background-color: #6366f1; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">Policat 확인하기</a>
+          <br/><br/>
           <p>감사합니다.<br/>Policat 팀 드림</p>
         </div>
       `,
@@ -114,7 +119,7 @@ export async function sendMarketSettlementEmails(bettings: any[], marketTitle: s
               <p><strong>최종 결과:</strong> ${winningSide.toUpperCase()}</p>
               <p>회원님의 예측은 <strong>${isWinner ? '적중했습니다! 🎉 배당금(포인트/XP)이 지급되었습니다.' : '아쉽게도 빗나갔습니다. 다음 예측에 다시 도전해 보세요!'}</strong></p>
               <br/>
-              <a href="https://policat.kr/profile/me" style="display: inline-block; padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 6px;">내역 확인하기</a>
+              <a href="https://policat.kr/profile/me" style="display: inline-block; padding: 12px 24px; background-color: #6366f1; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">내역 확인하기</a>
               <br/><br/>
               <p>감사합니다.<br/>Policat 팀 드림</p>
             </div>
