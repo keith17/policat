@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import { Info, CheckCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { sendMarketCreationEmail } from "@/app/actions/email";
 
 export default function CreateMarketPage() {
   const [formData, setFormData] = useState({
@@ -47,6 +48,9 @@ export default function CreateMarketPage() {
 
     if (!error) {
       setSubmitted(true);
+      if (user.email) {
+        sendMarketCreationEmail(user.email, formData.title).catch(console.error);
+      }
     } else {
       alert("제안 접수 중 오류가 발생했습니다.");
       console.error(error);

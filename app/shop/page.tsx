@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
 import { formatPoints } from "@/lib/data";
+import { sendShopOrderEmail } from "@/app/actions/email";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Coffee, Gift, Tag, CheckCircle } from "lucide-react";
 
@@ -151,6 +152,12 @@ export default function ShopPage() {
     });
 
     setPoints(newPoints);
+    
+    // Send email notification (fire and forget)
+    if (user.email) {
+      sendShopOrderEmail(user.email, buyModal.name).catch(console.error);
+    }
+    
     setBuyModal(null);
     setContactInfo("");
     showToast(`✅ ${buyModal.name} 교환이 신청되었습니다. (관리자 확인 후 발송)`, "success");
