@@ -27,9 +27,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## 📍 현재 상태 (as of 2026-05-06)
 
-### ✅ 완료된 것
+### ✅ 완료된 것 (as of 2026-05-12)
 | 항목 | 상태 | 비고 |
 |------|------|------|
+| **(New)** 이메일 알림 연동 (Resend) | ✅ 완료 | 마켓 생성/승인/정산, 상점 구매 시 이메일 발송 |
+| **(New)** 마켓 상태 Lifecycle 고도화 | ✅ 완료 | 진행중/종료(결과대기)/확정 상태 분리, `end_date` 도입 |
+| **(New)** 홈 화면 무한 스크롤 및 필터 | ✅ 완료 | 7일 경과 자동 숨김 및 종료됨(closed) 탭 신설 |
 | Next.js 16 App Router 기반 UI | ✅ 완료 | 다크 모드 Polymarket 스타일 |
 | Supabase Auth (Google OAuth) | ✅ 완료 | 신규 가입 시 profiles 자동 생성 |
 | 마켓 목록 Supabase 실데이터 연동 | ✅ 완료 | active/pending 마켓만 노출 |
