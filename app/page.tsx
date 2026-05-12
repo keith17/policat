@@ -299,13 +299,14 @@ export default function Home() {
         {/* Filter tabs */}
         <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap", alignItems: "center" }}>
           <h2 style={{ fontWeight: 800, fontSize: 20, color: "var(--text-primary)", marginRight: 8 }}>
-            🔥 진행 중인 마켓
+            {filter === "closed" ? "📋 종료된 마켓" : "🔥 진행 중인 마켓"}
           </h2>
           {[
             { key: "all", label: "전체" },
             { key: "economy", label: "경제" },
             { key: "politics", label: "정치" },
             { key: "society", label: "사회" },
+            { key: "closed", label: "종료됨" },
           ].map(({ key, label }) => (
             <motion.button
               key={key}
