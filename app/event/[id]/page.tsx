@@ -209,7 +209,7 @@ export default function EventPage() {
           {markets.map((m, i) => (
             <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-card)", padding: 20, borderRadius: 12, border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)", flexWrap: "wrap", gap: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16, flex: "1 1 300px" }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: colors[i % colors.length], color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16 }}>
+                <div style={{ width: 40, height: 40, minWidth: 40, borderRadius: "50%", background: colors[i % colors.length], color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16, flexShrink: 0 }}>
                   {i + 1}
                 </div>
                 <div>

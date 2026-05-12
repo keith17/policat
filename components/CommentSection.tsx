@@ -3,13 +3,28 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { MessageSquare, Send, Reply, Trash2, User } from "lucide-react";
 
+const ADJECTIVES = ['빠른', '조용한', '용감한', '영리한', '귀여운', '재빠른', '슬기로운', '당찬', '명랑한', '든든한', '유쾌한', '차분한'];
+const ANIMALS   = ['고양이', '여우', '독수리', '사자', '호랑이', '펭귄', '판다', '늑대', '거북이', '토끼', '부엉이', '다람쥐'];
+
+function generateNickname(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = (hash * 31 + userId.charCodeAt(i)) | 0;
+  }
+  const abs = Math.abs(hash);
+  const adj    = ADJECTIVES[abs % ADJECTIVES.length];
+  const animal = ANIMALS[(abs >> 4) % ANIMALS.length];
+  const suffix = userId.replace(/-/g, '').slice(0, 4);
+  return `${adj}${animal}_${suffix}`;
+}
+
 interface Comment {
   id: string;
   user_id: string;
   content: string;
   created_at: string;
   parent_id: string | null;
-  profiles: { full_name: string | null; email: string; avatar_url: string | null };
+  profiles: { avatar_url: string | null };
   replies?: Comment[];
 }
 
@@ -31,7 +46,7 @@ export default function CommentSection({ marketId, eventId, currentUser }: Comme
   }, [marketId, eventId]);
 
   const fetchComments = async () => {
-    let query = supabase.from("comments").select("*, profiles(full_name, email, avatar_url)").order("created_at", { ascending: true });
+    let query = supabase.from("comments").select("*, profiles(avatar_url)").order("created_at", { ascending: true });
     if (marketId) query = query.eq("market_id", marketId);
     if (eventId) query = query.eq("event_id", eventId);
     
@@ -79,7 +94,7 @@ export default function CommentSection({ marketId, eventId, currentUser }: Comme
 
   const CommentItem = ({ c, isReply = false }: { c: Comment, isReply?: boolean }) => {
     const isOwner = currentUser?.id === c.user_id;
-    const name = c.profiles?.full_name || c.profiles?.email?.split('@')[0] || '익명';
+    const name = generateNickname(c.user_id);
     return (
       <div style={{ marginLeft: isReply ? 40 : 0, marginTop: 16, borderLeft: isReply ? "2px solid var(--border)" : "none", paddingLeft: isReply ? 16 : 0 }}>
         <div style={{ display: "flex", gap: 12 }}>
