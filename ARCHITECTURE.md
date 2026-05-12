@@ -84,7 +84,7 @@
 |------|------|------|
 | id | uuid (PK) | - |
 | title | text | 마켓 제목 |
-| category | text | 카테고리 (economy, politics, society, sports) |
+| category | text | 카테고리 (economy, politics, society, sports, entertainment, tech, international) |
 | description | text | 마켓 상세 설명 |
 | yes_pool | integer | YES 쪽에 걸린 총 포인트 |
 | no_pool | integer | NO 쪽에 걸린 총 포인트 |

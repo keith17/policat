@@ -54,10 +54,13 @@
   color: var(--text-secondary);
 }
 
-.tag-economy   { background: rgba(245,181,68,0.14);  color: #B07300; }
-.tag-politics  { background: rgba(150,118,255,0.14); color: #6B46C1; }
-.tag-society   { background: rgba(0,176,116,0.14);   color: #00824B; }
-.tag-sports    { background: rgba(22,82,240,0.14);   color: #1652F0; }
+.tag-economy       { background: rgba(245,181,68,0.14);  color: #B07300; }
+.tag-politics      { background: rgba(150,118,255,0.14); color: #6B46C1; }
+.tag-society       { background: rgba(0,176,116,0.14);   color: #00824B; }
+.tag-sports        { background: rgba(22,82,240,0.14);   color: #1652F0; }
+.tag-entertainment { background: rgba(236,72,153,0.14);  color: #9D174D; }
+.tag-tech          { background: rgba(6,182,212,0.14);   color: #0E7490; }
+.tag-international { background: rgba(20,184,166,0.14);  color: #0F766E; }
 
 .tag-yes  { background: var(--accent-yes-soft); color: var(--accent-yes); }
 .tag-no   { background: var(--accent-no-soft);  color: var(--accent-no);  }

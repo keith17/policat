@@ -2,87 +2,117 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { formatPoints } from "@/lib/data";
 
 export default function EventCard({ event, index }: { event: any, index: number }) {
+  const marketCount = event.markets?.length || 0;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      className="glass-card"
+      initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: index * 0.06, duration: 0.35 }}
       style={{
-        background: "var(--bg-card)",
-        border: "1px solid var(--purple-primary)",
-        borderRadius: 16,
-        padding: 24,
+        padding: 20,
         position: "relative",
         overflow: "hidden",
-        display: "flex",
-        flexDirection: "column"
+        boxShadow: "var(--shadow-sm)",
+        borderLeft: "3px solid var(--accent)"
       }}
-      className="glass-card"
     >
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "var(--purple-primary)" }} />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-        <div style={{ display: "flex", gap: 8 }}>
-          <span style={{ background: "rgba(139,92,246,0.1)", color: "var(--purple-primary)", padding: "4px 8px", borderRadius: 6, fontSize: 12, fontWeight: 800 }}>
-            이벤트
-          </span>
-          <span style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)", padding: "4px 8px", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
-            다중 후보
-          </span>
-        </div>
-        <span style={{ fontSize: 24 }}>🎉</span>
+      {/* Header badges */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span className="tag" style={{ background: "var(--accent-soft)", color: "var(--accent)", fontWeight: 700 }}>
+          📊 이벤트
+        </span>
+        {marketCount > 0 && (
+          <span className="tag">{marketCount}개 후보</span>
+        )}
+        <span style={{
+          marginLeft: "auto", color: "var(--text-muted)", fontSize: 12,
+          display: "flex", alignItems: "center", gap: 4,
+          fontFamily: "var(--font-mono)"
+        }}>
+          ⏰ 참여 가능
+        </span>
       </div>
 
-      <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, lineHeight: 1.4 }}>
-        {event.title}
-      </h3>
-      
+      {/* Title */}
+      <Link href={`/event/${event.id}`} style={{ textDecoration: "none" }}>
+        <h3
+          style={{
+            fontSize: 16, fontWeight: 600, color: "var(--text-primary)",
+            marginBottom: event.description ? 8 : 16, lineHeight: 1.5,
+            transition: "color 0.15s"
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
+          onMouseLeave={e => (e.currentTarget.style.color = "var(--text-primary)")}
+        >
+          {event.title}
+        </h3>
+      </Link>
+
       {event.description && (
-        <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+        <p style={{
+          color: "var(--text-secondary)", fontSize: 13, marginBottom: 16, lineHeight: 1.5,
+          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"
+        }}>
           {event.description}
         </p>
       )}
 
-      {event.markets && event.markets.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, background: "var(--bg-secondary)", padding: 12, borderRadius: 8 }}>
+      {/* Candidate list */}
+      {marketCount > 0 && (
+        <div style={{
+          borderTop: "1px solid var(--border)", paddingTop: 12, marginBottom: 16,
+          display: "flex", flexDirection: "column", gap: 10
+        }}>
           {event.markets.slice(0, 3).map((m: any, i: number) => (
-            <div key={m.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ background: "var(--purple-primary)", color: "white", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", fontSize: 10, fontWeight: 800 }}>{i + 1}</span>
-                  <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{m.title}</span>
+            <div key={m.id}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, marginBottom: 5 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <span style={{
+                    color: "var(--text-muted)", fontSize: 11, fontWeight: 600,
+                    fontFamily: "var(--font-mono)", minWidth: 14, textAlign: "right"
+                  }}>{i + 1}</span>
+                  <span style={{ color: "var(--text-primary)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {m.title}
+                  </span>
                 </div>
-                <span style={{ color: "var(--purple-primary)", fontWeight: 800 }}>{m.yesProb}%</span>
+                <span style={{
+                  color: "var(--accent-yes)", fontWeight: 700, fontSize: 14,
+                  fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 8
+                }}>{m.yesProb}%</span>
               </div>
-              <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
-                <motion.div initial={{ width: 0 }} animate={{ width: `${m.yesProb}%` }} transition={{ duration: 1 }} style={{ height: "100%", background: "var(--purple-primary)" }} />
+              <div style={{ height: 4, background: "var(--surface-alt)", borderRadius: 2, overflow: "hidden" }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${m.yesProb}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut", delay: index * 0.06 + 0.3 }}
+                  style={{ height: "100%", background: "var(--accent-yes)", borderRadius: 2 }}
+                />
               </div>
             </div>
           ))}
-          {event.markets.length > 3 && (
-            <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginTop: 4 }}>
-              +{event.markets.length - 3}명 더보기
-            </div>
+          {marketCount > 3 && (
+            <span style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>
+              +{marketCount - 3}개 더
+            </span>
           )}
         </div>
       )}
 
-      <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-          {/* We could show total volume of all event markets here if we had it */}
-          참여 가능
-        </div>
-        
+      {/* Footer */}
+      <div style={{
+        borderTop: "1px solid var(--border)", paddingTop: 12,
+        display: "flex", justifyContent: "space-between", alignItems: "center"
+      }}>
+        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          👥 {marketCount}개 마켓
+        </span>
         <Link href={`/event/${event.id}`} style={{ textDecoration: "none" }}>
-          <button style={{
-            background: "var(--purple-primary)", color: "white", border: "none",
-            padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(139,92,246,0.3)"
-          }}>
-            이벤트 참여
+          <button className="btn-primary" style={{ padding: "7px 14px", fontSize: 13 }}>
+            자세히 보기 →
           </button>
         </Link>
       </div>

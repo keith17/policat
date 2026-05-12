@@ -13,6 +13,19 @@ import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
 import { markets as initialMarkets, formatPoints, getTier, tierConfig } from "@/lib/data";
 
+const CATEGORY_MAP: Record<string, { label: string; emoji: string }> = {
+  economy:       { label: '경제',    emoji: '📈' },
+  politics:      { label: '정치',    emoji: '🏛️' },
+  society:       { label: '사회',    emoji: '🤝' },
+  sports:        { label: '스포츠',  emoji: '⚽' },
+  entertainment: { label: '연예',    emoji: '🎬' },
+  tech:          { label: 'IT/기술', emoji: '💻' },
+  international: { label: '국제',    emoji: '🌍' },
+};
+
+function getCategoryLabel(cat: string) { return CATEGORY_MAP[cat]?.label ?? cat; }
+function getCategoryEmoji(cat: string) { return CATEGORY_MAP[cat]?.emoji ?? '📌'; }
+
 export default function Home() {
   const [points, setPoints] = useState(500);
   const [xp, setXp] = useState(500);
@@ -120,8 +133,8 @@ export default function Home() {
              title: m.title,
              category: m.category,
              event_id: m.event_id,
-             categoryLabel: m.category === 'economy' ? '경제' : m.category === 'politics' ? '정치' : m.category === 'society' ? '사회' : '스포츠',
-             emoji: m.category === 'economy' ? '📈' : m.category === 'politics' ? '🏛️' : m.category === 'society' ? '🤝' : '⚽',
+             categoryLabel: getCategoryLabel(m.category),
+             emoji: getCategoryEmoji(m.category),
              yesProb, noProb,
              yesAmount: m.yes_pool,
              noAmount: m.no_pool,
@@ -178,7 +191,7 @@ export default function Home() {
             const noProb = total > 0 ? 100 - yesProb : 50;
             return {
               id: m.id, type: 'market', title: m.title, description: m.description,
-              emoji: m.category === 'economy' ? '📈' : m.category === 'politics' ? '🏛️' : m.category === 'society' ? '🤝' : '⚽',
+              emoji: getCategoryEmoji(m.category),
               yesProb, noProb, totalVolume: total
             };
           })];
@@ -320,11 +333,15 @@ export default function Home() {
             {filter === "closed" ? "📋 종료된 마켓" : "🔥 진행 중인 마켓"}
           </h2>
           {[
-            { key: "all", label: "전체" },
-            { key: "economy", label: "경제" },
-            { key: "politics", label: "정치" },
-            { key: "society", label: "사회" },
-            { key: "closed", label: "종료됨" },
+            { key: "all",           label: "전체" },
+            { key: "politics",      label: "🏛️ 정치" },
+            { key: "economy",       label: "📈 경제" },
+            { key: "society",       label: "🤝 사회" },
+            { key: "sports",        label: "⚽ 스포츠" },
+            { key: "entertainment", label: "🎬 연예" },
+            { key: "tech",          label: "💻 IT/기술" },
+            { key: "international", label: "🌍 국제" },
+            { key: "closed",        label: "📋 종료됨" },
           ].map(({ key, label }) => (
             <motion.button
               key={key}
