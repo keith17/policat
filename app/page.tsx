@@ -102,7 +102,12 @@ export default function Home() {
            const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
            const noProb = total > 0 ? 100 - yesProb : 50;
            
-           const myBetRecord = userBets.find(b => b.market_id === m.id);
+           const myBetRecords = userBets.filter(b => b.market_id === m.id);
+           const myBetSummary = myBetRecords.length > 0 ? {
+             side: myBetRecords[myBetRecords.length - 1].side, // latest bet side
+             totalAmount: myBetRecords.reduce((sum: number, b: any) => sum + b.amount, 0),
+             count: myBetRecords.length
+           } : null;
            const endDateObj = new Date(m.end_date || m.created_at);
            
            let derivedStatus = m.status;
@@ -127,8 +132,9 @@ export default function Home() {
              daysLeft: Math.max(0, Math.ceil((endDateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))),
              hot: total > 5000,
              new: new Date().getTime() - new Date(m.created_at).getTime() < 86400000 * 2,
-             myBet: myBetRecord ? myBetRecord.side : null,
-             myBetAmount: myBetRecord ? myBetRecord.amount : 0,
+             myBet: myBetSummary ? myBetSummary.side : null,
+             myBetAmount: myBetSummary ? myBetSummary.totalAmount : 0,
+             myBetCount: myBetSummary ? myBetSummary.count : 0,
              status: derivedStatus
            };
          });

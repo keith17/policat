@@ -19,7 +19,7 @@ export default function MarketDetailPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [userBet, setUserBet] = useState<any>(null);
+  const [userBets, setUserBets] = useState<any[]>([]);
   
   const [betSide, setBetSide] = useState<"yes" | "no" | null>(null);
   const [betAmount, setBetAmount] = useState(50);
@@ -51,7 +51,7 @@ export default function MarketDetailPage() {
         
         const { data: bets } = await supabase.from("bets").select("*").eq("user_id", user.id).eq("market_id", marketId);
         if (bets && bets.length > 0) {
-          setUserBet(bets[0]);
+          setUserBets(bets);
         }
       }
 
@@ -149,7 +149,7 @@ export default function MarketDetailPage() {
     
     // Update local state immediately for UX
     setUserProfile({ ...userProfile, points: newPoints });
-    setUserBet({ side: betSide, amount: betAmount });
+    setUserBets(prev => [...prev, { side: betSide, amount: betAmount }]);
     
     // Insert DB records
     await supabase.from("bets").insert({
@@ -293,9 +293,19 @@ export default function MarketDetailPage() {
                   <div style={{ fontWeight: 800, fontSize: 16, color: market.status === "resolved_yes" ? "var(--accent-yes)" : "var(--accent-no)" }}>
                     최종 결과: {market.status === "resolved_yes" ? "YES 승리" : "NO 승리"}
                   </div>
-                  {userBet && (
-                    <div style={{ marginTop: 12, fontSize: 14, fontWeight: 700, color: userBet.side === (market.status.replace("resolved_", "")) ? "#22c55e" : "#ef4444" }}>
-                      {userBet.side === (market.status.replace("resolved_", "")) ? "🎉 예측 적중! 배당금을 획득했습니다." : "😢 예측 실패"}
+                  {userBets.length > 0 && (
+                    <div style={{ marginTop: 12 }}>
+                      {userBets.map((bet, i) => {
+                        const won = bet.side === market.status.replace("resolved_", "");
+                        return (
+                          <div key={i} style={{ fontSize: 13, fontWeight: 700, color: won ? "#22c55e" : "#ef4444", marginTop: 4 }}>
+                            {bet.side.toUpperCase()} {bet.amount}P → {won ? "🎉 적중!" : "😢 실패"}
+                          </div>
+                        );
+                      })}
+                      <div style={{ marginTop: 8, fontSize: 13, color: "var(--text-secondary)" }}>
+                        총 {userBets.length}건, {userBets.reduce((s: number, b: any) => s + b.amount, 0)}P 참여
+                      </div>
                     </div>
                   )}
                 </div>
@@ -303,22 +313,36 @@ export default function MarketDetailPage() {
                 <div style={{ textAlign: "center", padding: 24, background: "var(--bg-secondary)", borderRadius: 8, color: "var(--text-secondary)", fontWeight: 700 }}>
                   <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
                   베팅이 마감되었습니다.<br/>결과 판정 대기중입니다.
-                  {userBet && <div style={{ marginTop: 12, fontSize: 13 }}>내 예측: {userBet.side.toUpperCase()} ({userBet.amount}P)</div>}
-                </div>
-              ) : userBet ? (
-                <div style={{
-                  textAlign: "center", padding: 24,
-                  background: "var(--bg-secondary)",
-                  borderRadius: 8, border: `1px solid ${userBet.side === "yes" ? "var(--accent-yes)" : "var(--accent-no)"}`,
-                }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
-                  <p style={{ fontWeight: 800, color: userBet.side === "yes" ? "var(--accent-yes)" : "var(--accent-no)" }}>
-                    {userBet.side === "yes" ? "YES" : "NO"} 예측 완료!
-                  </p>
-                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 4, fontWeight: 600 }}>베팅금액: {userBet.amount}P</p>
+                  {userBets.length > 0 && (
+                    <div style={{ marginTop: 12, fontSize: 13 }}>
+                      내 참여: {userBets.length}건, 총 {userBets.reduce((s: number, b: any) => s + b.amount, 0)}P
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
+                  {/* My bet summary */}
+                  {userBets.length > 0 && (
+                    <div style={{
+                      padding: 12, marginBottom: 16,
+                      background: "var(--bg-secondary)", borderRadius: 8,
+                      border: "1px solid var(--border)",
+                    }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
+                        📊 내 참여 현황 ({userBets.length}건)
+                      </div>
+                      {userBets.map((bet, i) => (
+                        <div key={i} style={{ fontSize: 12, color: bet.side === "yes" ? "var(--accent-yes)" : "var(--accent-no)", fontWeight: 600, marginTop: 2 }}>
+                          {bet.side.toUpperCase()} {bet.amount}P
+                        </div>
+                      ))}
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
+                        합계: {userBets.reduce((s: number, b: any) => s + b.amount, 0)}P · 추가 참여 가능
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bet form */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
                     {(["yes", "no"] as const).map(side => (
                       <motion.button

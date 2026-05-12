@@ -157,46 +157,37 @@ export default function MarketCard({ market, onBet, userPoints, index, userId }:
           ⏳ 베팅 마감 (결과 판정 대기중)
           {market.myBet && <div style={{ fontSize: 13, marginTop: 4 }}>내 예측: {market.myBet.toUpperCase()} ({market.myBetAmount}P)</div>}
         </div>
-      ) : market.myBet ? (
-        <div style={{
-          padding: 12,
-          background: "var(--surface-alt)",
-          borderRadius: "var(--radius-md)",
-          display: "flex", flexDirection: "column", gap: 6
-        }}>
-          <div style={{
-            color: market.myBet === "yes" ? "var(--accent-yes)" : "var(--accent-no)",
-            fontWeight: 600, fontSize: 13, textAlign: "center"
-          }}>
-            ✓ {market.myBet === "yes" ? "YES" : "NO"}에{" "}
-            <span style={{ fontFamily: "var(--font-mono)" }}>{market.myBetAmount}P</span> 참여 완료
-          </div>
-          <div style={{ fontSize: 13, color: "var(--text-secondary)", textAlign: "center", background: "var(--bg-card)", padding: "6px", borderRadius: "var(--radius-sm)" }}>
-            적중 시 예상:{" "}
-            <span style={{ fontWeight: 700, color: market.myBet === "yes" ? "var(--accent-yes)" : "var(--accent-no)", fontFamily: "var(--font-mono)" }}>
-              {Math.round((market.myBetAmount || 0) * (100 / (market.myBet === "yes" ? market.yesProb : market.noProb)))}P
-            </span>
-          </div>
-        </div>
       ) : (
-        <div style={{ display: "flex", gap: 8 }}>
-          <motion.button
-            className="btn-yes"
-            style={{ flex: 1 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => onBet(market.id, "yes", 50)}
-          >
-            📈 YES
-          </motion.button>
-          <motion.button
-            className="btn-no"
-            style={{ flex: 1 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => onBet(market.id, "no", 50)}
-          >
-            📉 NO
-          </motion.button>
-        </div>
+        <>
+          {market.myBet && (
+            <div style={{
+              padding: "8px 12px", marginBottom: 8,
+              background: "var(--surface-alt)",
+              borderRadius: "var(--radius-md)",
+              fontSize: 12, color: "var(--text-secondary)", textAlign: "center"
+            }}>
+              ✅ {market.myBet === "yes" ? "YES" : "NO"}에 {market.myBetAmount}P 참여 중 · 추가 참여 가능
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8 }}>
+            <motion.button
+              className="btn-yes"
+              style={{ flex: 1 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => onBet(market.id, "yes", 50)}
+            >
+              📈 YES
+            </motion.button>
+            <motion.button
+              className="btn-no"
+              style={{ flex: 1 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => onBet(market.id, "no", 50)}
+            >
+              📉 NO
+            </motion.button>
+          </div>
+        </>
       )}
 
       {/* Share */}
