@@ -10,11 +10,9 @@ import { createClient } from "@/utils/supabase/client";
 
 const earnMethods = [
   { id: "video", title: "광고 영상 시청", desc: "30초 광고 시청 시 포인트 지급", reward: 50, emoji: "🎬", limit: "하루 20회", type: "ad" },
-  { id: "daily", title: "일일 출석 체크", desc: "매일 접속 시 포인트 지급 (연속 보너스↑)", reward: 5, emoji: "📅", limit: "하루 1회", type: "daily" },
+  { id: "daily", title: "일일 출석 체크", desc: "매일 접속 시 포인트 지급", reward: 5, emoji: "📅", limit: "하루 1회", type: "daily" },
   { id: "invite", title: "친구 초대", desc: "초대 링크를 복사해서 친구에게 공유하면 포인트 지급", reward: 50, emoji: "👥", limit: "무제한", type: "invite" },
   { id: "share", title: "마켓 공유하기", desc: "공유 링크를 통해 다른 사람이 방문하면 포인트 지급", reward: 5, emoji: "🔗", limit: "클릭당 (마켓당 최대 100P)", type: "share" },
-  { id: "comment", title: "예측 근거 작성", desc: "댓글 작성 후 관리자 승인 시 지급", reward: 5, emoji: "📝", limit: "하루 5회", type: "comment" },
-  { id: "streak", title: "연속 적중 보너스", desc: "3연속 이상 적중 시 보너스 지급", reward: 20, emoji: "🔥", limit: "달성 시마다", type: "streak" },
 ];
 
 export default function EarnPage() {
@@ -47,6 +45,9 @@ export default function EarnPage() {
         const today = new Date().toISOString().split('T')[0];
         const { data: txs } = await supabase.from("point_transactions").select("*").eq("user_id", user.id).eq("type", "ad_reward").gte("created_at", today);
         if (txs) setVideoCount(txs.length);
+        // Check if daily claim already done today
+        const { data: dailyTxs } = await supabase.from("point_transactions").select("id").eq("user_id", user.id).eq("type", "reward").like("description", "%출석 체크%").gte("created_at", today).limit(1);
+        if (dailyTxs && dailyTxs.length > 0) setDailyClaimed(true);
       }
     }
     fetchUser();
@@ -77,11 +78,18 @@ export default function EarnPage() {
     });
   };
 
-  const claimDaily = () => {
+  const claimDaily = async () => {
     if (dailyClaimed || !user) return;
-    const bonus = 5 + streak * 5;
+    // DB-level dedup check
+    const today = new Date().toISOString().split('T')[0];
+    const { data: existing } = await supabase.from("point_transactions").select("id").eq("user_id", user.id).eq("type", "reward").like("description", "%출석 체크%").gte("created_at", today).limit(1);
+    if (existing && existing.length > 0) {
+      setDailyClaimed(true);
+      showToast("이미 오늘 출석 체크를 완료했습니다.");
+      return;
+    }
     setDailyClaimed(true);
-    earnPoints(bonus, "출석 체크 완료!");
+    earnPoints(5, "출석 체크 완료!");
   };
 
   const handleAdClick = () => {
@@ -268,15 +276,6 @@ export default function EarnPage() {
                     마켓 페이지에서 공유하기
                   </button>
                 </Link>
-              )}
-              {(method.type === "comment" || method.type === "streak") && (
-                <button style={{
-                  width: "100%", padding: "12px", fontSize: 13, fontWeight: 700,
-                  background: "var(--bg-secondary)", border: "1px solid var(--border)",
-                  borderRadius: 8, color: "var(--text-secondary)", cursor: "default"
-                }}>
-                  자동 지급 (조건 달성 시)
-                </button>
               )}
             </motion.div>
           ))}

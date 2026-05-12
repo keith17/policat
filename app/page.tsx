@@ -41,6 +41,10 @@ export default function Home() {
           setXp(profile.xp !== undefined ? profile.xp : profile.points); // fallback if SQL not run yet
           setStreak(profile.streak || 0);
         }
+        // Check if daily claim already done today
+        const today = new Date().toISOString().split('T')[0];
+        const { data: dailyTxs } = await supabase.from("point_transactions").select("id").eq("user_id", currentUser.id).eq("type", "reward").like("description", "%출석 체크%").gte("created_at", today).limit(1);
+        if (dailyTxs && dailyTxs.length > 0) setDailyClaimed(true);
       }
     }
 
@@ -250,7 +254,15 @@ export default function Home() {
 
   const claimDaily = async () => {
     if (dailyClaimed || !user) return;
-    const bonus = 5 + streak * 5;
+    // DB-level dedup check
+    const today = new Date().toISOString().split('T')[0];
+    const { data: existing } = await supabase.from("point_transactions").select("id").eq("user_id", user.id).eq("type", "reward").like("description", "%출석 체크%").gte("created_at", today).limit(1);
+    if (existing && existing.length > 0) {
+      setDailyClaimed(true);
+      showToast("이미 오늘 출석 체크를 완료했습니다.", "info");
+      return;
+    }
+    const bonus = 5;
     const newPoints = points + bonus;
     const newXp = xp + bonus;
 
