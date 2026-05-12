@@ -16,8 +16,7 @@ export default function EventCard({ event, index }: { event: any, index: number 
         padding: 20,
         position: "relative",
         overflow: "hidden",
-        boxShadow: "var(--shadow-sm)",
-        borderLeft: "3px solid var(--accent)"
+        boxShadow: "var(--shadow-sm)"
       }}
     >
       {/* Header badges */}
