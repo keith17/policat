@@ -215,7 +215,7 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
                       transition={{ duration: 0.15 }}
                       style={{
-                        position: "absolute", top: 48, right: 0,
+                        position: "fixed", top: 68, right: 12,
                         width: 220, background: "var(--bg-card)",
                         borderRadius: "var(--radius-md)",
                         boxShadow: "var(--shadow-lg)",

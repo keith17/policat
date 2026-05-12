@@ -439,14 +439,12 @@ export default function Home() {
                 zIndex: 200
               }}
             />
+            <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 201, width: "calc(100% - 40px)", maxWidth: 420 }}>
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               style={{
-                position: "fixed", top: "50%", left: "50%",
-                transform: "translate(-50%, -50%)",
-                zIndex: 201, width: "90%", maxWidth: 420,
                 background: "var(--bg-card)",
                 border: "1px solid var(--border)",
                 borderRadius: 12, padding: 28,
@@ -525,6 +523,7 @@ export default function Home() {
                 </motion.button>
               </div>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -532,26 +531,25 @@ export default function Home() {
       {/* Toast */}
       <AnimatePresence>
         {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            style={{
-              position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)",
-              zIndex: 300,
-              background: toast.type === "success"
-                ? "linear-gradient(135deg, #059669, #22d3a0)"
-                : toast.type === "warn"
-                  ? "linear-gradient(135deg, #be123c, #f43f5e)"
-                  : "linear-gradient(135deg, #8b5cf6, #ec4899)",
-              borderRadius: 14, padding: "14px 24px",
-              color: "white", fontWeight: 700, fontSize: 15,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-              whiteSpace: "nowrap"
-            }}
-          >
-            {toast.msg}
-          </motion.div>
+          <div style={{ position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)", zIndex: 300, whiteSpace: "nowrap" }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              style={{
+                background: toast.type === "success"
+                  ? "linear-gradient(135deg, #059669, #22d3a0)"
+                  : toast.type === "warn"
+                    ? "linear-gradient(135deg, #be123c, #f43f5e)"
+                    : "linear-gradient(135deg, #8b5cf6, #ec4899)",
+                borderRadius: 14, padding: "14px 24px",
+                color: "white", fontWeight: 700, fontSize: 15,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.4)"
+              }}
+            >
+              {toast.msg}
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

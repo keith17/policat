@@ -218,24 +218,24 @@ export default function EventPage() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 24, flex: "1 1 300px", justifyContent: "flex-end" }}>
-                <div style={{ textAlign: "right" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, flex: "1 1 260px", justifyContent: "space-between" }}>
+                <div>
                   <div style={{ fontSize: 24, fontWeight: 800, color: colors[i % colors.length] }}>{m.yesProb}%</div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)" }}>당선 (YES)</div>
                 </div>
 
                 {m.myBet ? (
-                  <div style={{ background: "var(--surface-alt)", padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, textAlign: "center", minWidth: 160 }}>
+                  <div style={{ background: "var(--surface-alt)", padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, textAlign: "center", flex: 1, maxWidth: 200 }}>
                     ✓ {m.myBet === 'yes' ? '당선(YES)' : '낙선(NO)'} 예측 완료<br/>
                     <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400 }}>{m.myBetAmount}P 참여</span>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => handleBet(m.id, 'yes')} style={{ padding: "10px 20px", background: "var(--accent-yes-soft)", color: "var(--accent-yes)", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="var(--accent-yes)"} onMouseLeave={e=>e.currentTarget.style.background="var(--accent-yes-soft)"}>
-                      당선 YES
+                  <div style={{ display: "flex", gap: 8, flex: 1, maxWidth: 220 }}>
+                    <button onClick={() => handleBet(m.id, 'yes')} style={{ flex: 1, padding: "10px 12px", background: "var(--accent-yes-soft)", color: "var(--accent-yes)", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }} onMouseEnter={e=>e.currentTarget.style.background="var(--accent-yes)"} onMouseLeave={e=>e.currentTarget.style.background="var(--accent-yes-soft)"}>
+                      YES
                     </button>
-                    <button onClick={() => handleBet(m.id, 'no')} style={{ padding: "10px 20px", background: "var(--accent-no-soft)", color: "var(--accent-no)", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="var(--accent-no)"} onMouseLeave={e=>e.currentTarget.style.background="var(--accent-no-soft)"}>
-                      낙선 NO
+                    <button onClick={() => handleBet(m.id, 'no')} style={{ flex: 1, padding: "10px 12px", background: "var(--accent-no-soft)", color: "var(--accent-no)", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }} onMouseEnter={e=>e.currentTarget.style.background="var(--accent-no)"} onMouseLeave={e=>e.currentTarget.style.background="var(--accent-no-soft)"}>
+                      NO
                     </button>
                   </div>
                 )}
@@ -257,9 +257,10 @@ export default function EventPage() {
               onClick={() => setBetModal(null)}
               style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", zIndex: 200 }}
             />
+            <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 201, width: "calc(100% - 40px)", maxWidth: 420 }}>
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 201, width: "90%", maxWidth: 420, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 28, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 28, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
             >
               <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, color: "var(--text-primary)" }}>
                 {betModal.side === "yes" ? "📈 당선(YES) 예측" : "📉 낙선(NO) 예측"}
@@ -287,6 +288,7 @@ export default function EventPage() {
                 <motion.button onClick={confirmBet} whileTap={{ scale: 0.97 }} className={betModal.side === "yes" ? "btn-yes" : "btn-no"} style={{ flex: 2, padding: "13px", fontSize: 15, borderRadius: 8 }}>{betAmount}P 예측 확정</motion.button>
               </div>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -294,7 +296,9 @@ export default function EventPage() {
       {/* Toast */}
       <AnimatePresence>
         {toast && (
-          <motion.div initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.9 }} style={{ position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)", zIndex: 300, background: toast.type === "success" ? "linear-gradient(135deg, #059669, #22d3a0)" : toast.type === "warn" ? "linear-gradient(135deg, #be123c, #f43f5e)" : "linear-gradient(135deg, #8b5cf6, #ec4899)", borderRadius: 14, padding: "14px 24px", color: "white", fontWeight: 700, fontSize: 15, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>{toast.msg}</motion.div>
+          <div style={{ position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)", zIndex: 300, whiteSpace: "nowrap" }}>
+            <motion.div initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.9 }} style={{ background: toast.type === "success" ? "linear-gradient(135deg, #059669, #22d3a0)" : toast.type === "warn" ? "linear-gradient(135deg, #be123c, #f43f5e)" : "linear-gradient(135deg, #8b5cf6, #ec4899)", borderRadius: 14, padding: "14px 24px", color: "white", fontWeight: 700, fontSize: 15, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>{toast.msg}</motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

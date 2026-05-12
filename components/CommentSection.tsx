@@ -3,19 +3,13 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { MessageSquare, Send, Reply, Trash2, User } from "lucide-react";
 
-const ADJECTIVES = ['빠른', '조용한', '용감한', '영리한', '귀여운', '재빠른', '슬기로운', '당찬', '명랑한', '든든한', '유쾌한', '차분한'];
-const ANIMALS   = ['고양이', '여우', '독수리', '사자', '호랑이', '펭귄', '판다', '늑대', '거북이', '토끼', '부엉이', '다람쥐'];
-
 function generateNickname(userId: string): string {
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {
     hash = (hash * 31 + userId.charCodeAt(i)) | 0;
   }
-  const abs = Math.abs(hash);
-  const adj    = ADJECTIVES[abs % ADJECTIVES.length];
-  const animal = ANIMALS[(abs >> 4) % ANIMALS.length];
-  const suffix = userId.replace(/-/g, '').slice(0, 4);
-  return `${adj}${animal}_${suffix}`;
+  const num = Math.abs(hash) % 100000;
+  return `예측러 #${String(num).padStart(5, '0')}`;
 }
 
 interface Comment {
