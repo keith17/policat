@@ -3,15 +3,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
-import { AdBanner, AdVideoReward } from "@/components/AdBanner";
+import { AdBanner } from "@/components/AdBanner";
+import AdRewardModal from "@/components/AdRewardModal";
 import { getTier, tierConfig, formatPoints } from "@/lib/data";
 import { createClient } from "@/utils/supabase/client";
 
 const earnMethods = [
-  { id: "video", title: "광고 영상 시청", desc: "30초 광고 시청 시 포인트 지급", reward: 10, emoji: "🎬", limit: "하루 20회", type: "ad" },
+  { id: "video", title: "광고 영상 시청", desc: "30초 광고 시청 시 포인트 지급", reward: 50, emoji: "🎬", limit: "하루 20회", type: "ad" },
   { id: "daily", title: "일일 출석 체크", desc: "매일 접속 시 포인트 지급 (연속 보너스↑)", reward: 5, emoji: "📅", limit: "하루 1회", type: "daily" },
-  { id: "invite", title: "친구 초대", desc: "초대한 친구가 첫 예측 시 포인트 지급", reward: 50, emoji: "👥", limit: "무제한", type: "invite" },
-  { id: "share", title: "마켓 공유하기", desc: "공유 링크 클릭 발생 시 포인트 지급", reward: 3, emoji: "🔗", limit: "클릭당", type: "share" },
+  { id: "invite", title: "친구 초대", desc: "초대 링크를 복사해서 친구에게 공유하면 포인트 지급", reward: 50, emoji: "👥", limit: "무제한", type: "invite" },
+  { id: "share", title: "마켓 공유하기", desc: "공유 링크를 통해 다른 사람이 방문하면 포인트 지급", reward: 5, emoji: "🔗", limit: "클릭당 (마켓당 최대 100P)", type: "share" },
   { id: "comment", title: "예측 근거 작성", desc: "댓글 작성 후 관리자 승인 시 지급", reward: 5, emoji: "📝", limit: "하루 5회", type: "comment" },
   { id: "streak", title: "연속 적중 보너스", desc: "3연속 이상 적중 시 보너스 지급", reward: 20, emoji: "🔥", limit: "달성 시마다", type: "streak" },
 ];
@@ -23,11 +24,13 @@ export default function EarnPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [dailyClaimed, setDailyClaimed] = useState(false);
   const [videoCount, setVideoCount] = useState(0);
-  const [inviteLink] = useState("https://policat.kr/invite/CAT20260417");
   const [copied, setCopied] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [showAdModal, setShowAdModal] = useState(false);
 
   const supabase = createClient();
+  const AD_REWARD_AMOUNT = 50;
+  const MAX_ADS_PER_DAY = 20;
 
   useEffect(() => {
     async function fetchUser() {
@@ -40,6 +43,10 @@ export default function EarnPage() {
           setXp(profile.xp !== undefined ? profile.xp : profile.points);
           setStreak(profile.streak || 0);
         }
+        // Count today's ad watches
+        const today = new Date().toISOString().split('T')[0];
+        const { data: txs } = await supabase.from("point_transactions").select("*").eq("user_id", user.id).eq("type", "ad_reward").gte("created_at", today);
+        if (txs) setVideoCount(txs.length);
       }
     }
     fetchUser();
@@ -50,13 +57,13 @@ export default function EarnPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const earnPoints = async (amount: number, msg: string) => {
+  const earnPoints = async (amount: number, msg: string, type: string = "reward") => {
     if (!user) {
       showToast("로그인이 필요합니다.");
       return;
     }
     const newPoints = points + amount;
-    const newXp = xp + amount; // XP also increases
+    const newXp = xp + amount;
     setPoints(newPoints);
     setXp(newXp);
     showToast(`✅ ${msg} +${amount}P`);
@@ -65,7 +72,7 @@ export default function EarnPage() {
     await supabase.from("point_transactions").insert({
       user_id: user.id,
       amount: amount,
-      type: "reward",
+      type: type,
       description: msg
     });
   };
@@ -77,20 +84,36 @@ export default function EarnPage() {
     earnPoints(bonus, "출석 체크 완료!");
   };
 
-  const watchVideo = () => {
-    if (videoCount >= 20) {
+  const handleAdClick = () => {
+    if (!user) {
+      showToast("로그인이 필요합니다.");
+      return;
+    }
+    if (videoCount >= MAX_ADS_PER_DAY) {
       showToast("오늘의 광고 시청 한도에 도달했습니다.");
       return;
     }
-    setVideoCount(c => c + 1);
-    earnPoints(10, "광고 시청(데모)");
+    setShowAdModal(true);
   };
 
-  const copyInvite = () => {
+  const handleAdComplete = async (isCompleted: boolean) => {
+    setShowAdModal(false);
+    if (!isCompleted || !user) return;
+    setVideoCount(c => c + 1);
+    await earnPoints(AD_REWARD_AMOUNT, "광고 시청 리워드", "ad_reward");
+  };
+
+  const copyInvite = async () => {
+    if (!user) {
+      showToast("로그인이 필요합니다.");
+      return;
+    }
+    const inviteLink = `https://policat.kr/?ref=${user.id}`;
     navigator.clipboard?.writeText(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    showToast("📋 초대 링크 복사 완료!");
+    // 초대 링크 복사 시 50P 지급
+    await earnPoints(50, "친구 초대 링크 공유");
   };
 
   // Tier progress (based on XP)
@@ -176,104 +199,108 @@ export default function EarnPage() {
           </div>
         </motion.div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 20, alignItems: "start" }}>
-          <div>
-            {/* Earn Methods Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12, marginBottom: 24 }}>
-              {earnMethods.map((method, i) => (
-                <motion.div
-                  key={method.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                  style={{ padding: 24, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span style={{ fontSize: 28 }}>{method.emoji}</span>
-                    <span style={{
-                      background: "rgba(34,211,160,0.1)", color: "var(--accent-yes)",
-                      border: "1px solid rgba(34,211,160,0.2)",
-                      borderRadius: 100, padding: "3px 10px", fontSize: 12, fontWeight: 800,
-                      display: "flex", alignItems: "center"
-                    }}>
-                      +{method.reward}P
-                    </span>
-                  </div>
-                  <div style={{ fontWeight: 800, marginBottom: 6, color: "var(--text-primary)" }}>{method.title}</div>
-                  <div style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>{method.desc}</div>
-                  <div style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 16, fontWeight: 600 }}>한도: {method.limit}</div>
-
-                  {method.type === "ad" && (
-                    <motion.button
-                      className="btn-primary"
-                      style={{ width: "100%", padding: "12px", fontSize: 13, borderRadius: 8 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={watchVideo}
-                    >
-                      {videoCount >= 20 ? "오늘 한도 초과" : `광고 시청하기 (${videoCount}/20)`}
-                    </motion.button>
-                  )}
-                  {method.type === "daily" && (
-                    <motion.button
-                      className="btn-primary"
-                      style={{ width: "100%", padding: "12px", fontSize: 13, borderRadius: 8, opacity: dailyClaimed ? 0.5 : 1 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={claimDaily}
-                    >
-                      {dailyClaimed ? "✅ 오늘 출석 완료" : "출석 체크하기"}
-                    </motion.button>
-                  )}
-                  {method.type === "invite" && (
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={copyInvite}
-                      style={{
-                        width: "100%", padding: "12px", fontSize: 13, fontWeight: 700,
-                        background: copied ? "var(--accent-yes)" : "var(--bg-card-hover)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 8, color: copied ? "white" : "var(--text-primary)", cursor: "pointer"
-                      }}
-                    >
-                      {copied ? "✅ 복사됨!" : "초대 링크 복사"}
-                    </motion.button>
-                  )}
-                  {(method.type === "share" || method.type === "comment" || method.type === "streak") && (
-                    <button style={{
-                      width: "100%", padding: "12px", fontSize: 13, fontWeight: 700,
-                      background: "var(--bg-secondary)", border: "1px solid var(--border)",
-                      borderRadius: 8, color: "var(--text-secondary)", cursor: "default"
-                    }}>
-                      자동 지급 (조건 달성 시)
-                    </button>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Link to Shop */}
-            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 24, textAlign: "center" }}>
-              <h2 style={{ fontWeight: 800, fontSize: 18, marginBottom: 8, color: "var(--text-primary)" }}>충분히 포인트를 모으셨나요?</h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 20 }}>
-                상점 페이지에서 현실의 모바일 쿠폰으로 교환할 수 있습니다!
-              </p>
-              <Link href="/shop" style={{ textDecoration: "none" }}>
-                <button style={{
-                  background: "var(--text-primary)", color: "var(--bg-primary)",
-                  padding: "14px 28px", borderRadius: 8, fontWeight: 800, fontSize: 15, cursor: "pointer", border: "none"
+        {/* Earn Methods Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12, marginBottom: 24 }}>
+          {earnMethods.map((method, i) => (
+            <motion.div
+              key={method.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06 }}
+              style={{ padding: 24, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 28 }}>{method.emoji}</span>
+                <span style={{
+                  background: "rgba(34,211,160,0.1)", color: "var(--accent-yes)",
+                  border: "1px solid rgba(34,211,160,0.2)",
+                  borderRadius: 100, padding: "3px 10px", fontSize: 12, fontWeight: 800,
+                  display: "flex", alignItems: "center"
                 }}>
-                  상점(교환소) 바로가기 👉
-                </button>
-              </Link>
-            </div>
-          </div>
+                  +{method.reward}P
+                </span>
+              </div>
+              <div style={{ fontWeight: 800, marginBottom: 6, color: "var(--text-primary)" }}>{method.title}</div>
+              <div style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>{method.desc}</div>
+              <div style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 16, fontWeight: 600 }}>한도: {method.limit}</div>
 
-          {/* Right Sidebar */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <AdVideoReward onEarn={(p) => earnPoints(p, "광고 시청(배너)")} />
-            <AdBanner type="square" />
-          </div>
+              {method.type === "ad" && (
+                <motion.button
+                  className="btn-primary"
+                  style={{ width: "100%", padding: "12px", fontSize: 13, borderRadius: 8 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleAdClick}
+                >
+                  {videoCount >= MAX_ADS_PER_DAY ? "오늘 한도 초과" : `광고 시청하기 (${videoCount}/${MAX_ADS_PER_DAY})`}
+                </motion.button>
+              )}
+              {method.type === "daily" && (
+                <motion.button
+                  className="btn-primary"
+                  style={{ width: "100%", padding: "12px", fontSize: 13, borderRadius: 8, opacity: dailyClaimed ? 0.5 : 1 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={claimDaily}
+                >
+                  {dailyClaimed ? "✅ 오늘 출석 완료" : "출석 체크하기"}
+                </motion.button>
+              )}
+              {method.type === "invite" && (
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={copyInvite}
+                  style={{
+                    width: "100%", padding: "12px", fontSize: 13, fontWeight: 700,
+                    background: copied ? "var(--accent-yes)" : "var(--bg-card-hover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8, color: copied ? "white" : "var(--text-primary)", cursor: "pointer"
+                  }}
+                >
+                  {copied ? "✅ 복사됨! +50P 지급" : "초대 링크 복사 (+50P)"}
+                </motion.button>
+              )}
+              {method.type === "share" && (
+                <Link href="/" style={{ textDecoration: "none" }}>
+                  <button style={{
+                    width: "100%", padding: "12px", fontSize: 13, fontWeight: 700,
+                    background: "var(--bg-card-hover)", border: "1px solid var(--border)",
+                    borderRadius: 8, color: "var(--text-primary)", cursor: "pointer"
+                  }}>
+                    마켓 페이지에서 공유하기
+                  </button>
+                </Link>
+              )}
+              {(method.type === "comment" || method.type === "streak") && (
+                <button style={{
+                  width: "100%", padding: "12px", fontSize: 13, fontWeight: 700,
+                  background: "var(--bg-secondary)", border: "1px solid var(--border)",
+                  borderRadius: 8, color: "var(--text-secondary)", cursor: "default"
+                }}>
+                  자동 지급 (조건 달성 시)
+                </button>
+              )}
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Link to Shop */}
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 24, textAlign: "center" }}>
+          <h2 style={{ fontWeight: 800, fontSize: 18, marginBottom: 8, color: "var(--text-primary)" }}>충분히 포인트를 모으셨나요?</h2>
+          <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 20 }}>
+            상점 페이지에서 현실의 모바일 쿠폰으로 교환할 수 있습니다!
+          </p>
+          <Link href="/shop" style={{ textDecoration: "none" }}>
+            <button style={{
+              background: "var(--text-primary)", color: "var(--bg-primary)",
+              padding: "14px 28px", borderRadius: 8, fontWeight: 800, fontSize: 15, cursor: "pointer", border: "none"
+            }}>
+              상점(교환소) 바로가기 👉
+            </button>
+          </Link>
         </div>
       </div>
+
+      {/* Ad Reward Modal */}
+      {showAdModal && <AdRewardModal rewardAmount={AD_REWARD_AMOUNT} onAcknowledge={handleAdComplete} />}
 
       <AnimatePresence>
         {toast && (

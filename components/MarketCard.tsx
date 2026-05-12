@@ -26,9 +26,10 @@ interface MarketCardProps {
   onBet: (marketId: string, side: "yes" | "no", amount: number) => void;
   userPoints: number;
   index: number;
+  userId?: string;
 }
 
-export default function MarketCard({ market, onBet, userPoints, index }: MarketCardProps) {
+export default function MarketCard({ market, onBet, userPoints, index, userId }: MarketCardProps) {
   return (
     <motion.div
       className="glass-card"
@@ -203,15 +204,17 @@ export default function MarketCard({ market, onBet, userPoints, index }: MarketC
         className="btn-soft"
         style={{ width: "100%", marginTop: 8, fontSize: 12, padding: "8px" }}
         onClick={() => {
-          const text = `폴리캣 마켓: "${market.title}"\nYES ${market.yesProb}% / NO ${market.noProb}%\n지금 예측하러 가보세요! 👉 policat.kr`;
+          const refParam = userId ? `?ref=${userId}` : "";
+          const shareUrl = `https://policat.kr/market/${market.id}${refParam}`;
+          const text = `폴리캣 마켓: "${market.title}"\nYES ${market.yesProb}% / NO ${market.noProb}%\n지금 예측하러 가보세요! 👉 ${shareUrl}`;
           if (navigator.share) {
-            navigator.share({ title: "폴리캣 예측", text, url: `https://policat.kr/market/${market.id}` });
+            navigator.share({ title: "폴리캣 예측", text, url: shareUrl });
           } else {
             navigator.clipboard.writeText(text);
           }
         }}
       >
-        🔗 친구에게 공유하기 (+3P)
+        🔗 친구에게 공유하기
       </button>
     </motion.div>
   );

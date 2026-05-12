@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { formatPoints, formatDate } from "@/lib/data";
 import { AdBanner } from "@/components/AdBanner";
 import Navbar from "@/components/Navbar";
@@ -33,6 +33,17 @@ export default function MarketDetailPage() {
       // Load user
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+
+      // Track share referral click
+      const urlParams = new URLSearchParams(window.location.search);
+      const refId = urlParams.get('ref');
+      if (refId && refId !== user?.id) {
+        fetch('/api/share-click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referrerId: refId, marketId })
+        }).catch(() => {});
+      }
       
       if (user) {
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
@@ -159,9 +170,11 @@ export default function MarketDetailPage() {
   };
 
   const handleShare = () => {
-    const text = `[폴리캣] "${market.title}"\nYES ${market.yesProb}% / NO ${market.noProb}%\n지금 예측해보세요! 👉 policat.kr/market/${market.id}\n#폴리캣 #예측마켓`;
+    const refParam = user ? `?ref=${user.id}` : "";
+    const shareUrl = `https://policat.kr/market/${market.id}${refParam}`;
+    const text = `[폴리캣] "${market.title}"\nYES ${market.yesProb}% / NO ${market.noProb}%\n지금 예측해보세요! 👉 ${shareUrl}\n#폴리캣 #예측마켓`;
     navigator.clipboard?.writeText(text);
-    showToast("📋 공유 링크가 복사됐습니다! (+3P)");
+    showToast("📋 공유 링크가 복사됐습니다!");
   };
 
   const catColor = market.category === 'economy' ? '#f59e0b' : market.category === 'politics' ? '#a78bfa' : '#22d3a0';

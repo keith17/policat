@@ -141,7 +141,18 @@ export default function Home() {
         const { data: evts } = await supabase.from("events").select("*").eq("status", "active").order("created_at", { ascending: false });
         let fItems: any[] = [];
         if (evts) {
-          const enrichedEvents = evts.map((e: any) => ({ ...e, markets: [] })); // Mock markets for event, in real app need proper join
+          // Fetch all markets that belong to events for ranking/graph
+          const eventIds = evts.map(e => e.id);
+          const { data: eventMkts } = await supabase.from("markets").select("*").in("event_id", eventIds).eq("status", "active");
+          
+          const enrichedEvents = evts.map((e: any) => {
+            const subMkts = (eventMkts || []).filter(m => m.event_id === e.id).map(m => {
+              const total = m.yes_pool + m.no_pool;
+              const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
+              return { ...m, yesProb, noProb: total > 0 ? 100 - yesProb : 50, totalVolume: total };
+            }).sort((a, b) => b.yesProb - a.yesProb);
+            return { ...e, markets: subMkts };
+          });
           setEvents(enrichedEvents);
           fItems = [...enrichedEvents.filter(e => e.is_featured).map(e => ({
             id: e.id, type: 'event', title: e.title, description: e.description, emoji: '🎉', markets: e.markets
@@ -346,6 +357,7 @@ export default function Home() {
                       onBet={handleBet}
                       userPoints={points}
                       index={item.index + (filter === "all" ? events.length : 0)}
+                      userId={user?.id}
                     />
                   )}
                 </div>
@@ -353,6 +365,22 @@ export default function Home() {
             });
           })()}
         </div>
+
+        {/* Closed Markets CTA */}
+        {filter !== "closed" && (
+          <div style={{ textAlign: "center", marginTop: 24 }}>
+            <button
+              onClick={() => setFilter("closed")}
+              style={{
+                padding: "14px 28px", borderRadius: 8, fontWeight: 700, fontSize: 14,
+                background: "var(--bg-card)", border: "1px solid var(--border)",
+                color: "var(--text-secondary)", cursor: "pointer"
+              }}
+            >
+              📋 종료된 지난 마켓 전체보기 →
+            </button>
+          </div>
+        )}
 
         {/* Bottom Ad */}
         <div style={{ marginTop: 32 }}>

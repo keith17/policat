@@ -144,7 +144,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Ad Reward Banner */}
+        {/* 포인트 획득 페이지 유도 */}
         <section style={{
           background: "linear-gradient(135deg, rgba(139,92,246,0.1), rgba(244,63,94,0.1))",
           border: "1px solid var(--purple-primary)",
@@ -152,25 +152,22 @@ export default function ProfilePage() {
           display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16
         }}>
           <div>
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, display: "flex", gap: 8, alignItems: "center" }}>
-              📺 무료 포인트 충전소 <span style={{ fontSize: 13, padding: "3px 8px", background: "var(--purple-primary)", color: "white", borderRadius: 12 }}>BETA</span>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>
+              💎 포인트가 필요하신가요?
             </h2>
             <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-              포인트가 부족하신가요? 후원사 광고 시청 미션을 달성하고 <br/>즉시 <strong>{AD_REWARD_AMOUNT}P</strong>를 지급받으세요. (일일 한도: {MAX_ADS_PER_DAY}회)
+              광고 시청, 친구 초대, 마켓 공유 등 다양한 방법으로 포인트를 획득하세요!
             </p>
           </div>
-          <button 
-            onClick={handleToggleAd}
-            disabled={adsWatchedToday >= MAX_ADS_PER_DAY}
-            style={{ 
+          <a href="/earn" style={{ textDecoration: "none" }}>
+            <button style={{ 
               padding: "16px 24px", borderRadius: 12, border: "none",
-              background: adsWatchedToday >= MAX_ADS_PER_DAY ? "var(--bg-secondary)" : "var(--text-primary)", 
-              color: adsWatchedToday >= MAX_ADS_PER_DAY ? "var(--text-muted)" : "var(--bg-primary)", 
-              fontSize: 16, fontWeight: 800, cursor: adsWatchedToday >= MAX_ADS_PER_DAY ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8 
-            }}
-          >
-            {adsWatchedToday >= MAX_ADS_PER_DAY ? `오늘 한도 도달 (${adsWatchedToday}/${MAX_ADS_PER_DAY})` : <><Play size={18} /> 광고 보고 {AD_REWARD_AMOUNT}P 받기 ({adsWatchedToday}/${MAX_ADS_PER_DAY})</>}
-          </button>
+              background: "var(--text-primary)", color: "var(--bg-primary)", 
+              fontSize: 16, fontWeight: 800, cursor: "pointer"
+            }}>
+              포인트 획득하기 →
+            </button>
+          </a>
         </section>
 
         {/* Transactions Table */}

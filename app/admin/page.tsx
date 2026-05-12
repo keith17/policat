@@ -27,6 +27,7 @@ export default function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"users" | "markets" | "orders" | "events" | "notices">("users");
+  const [marketFilter, setMarketFilter] = useState<"all" | "pending" | "active" | "ended" | "resolved">("all");
 
   const [users, setUsers] = useState<any[]>([]);
   const [markets, setMarkets] = useState<any[]>([]);
@@ -120,6 +121,9 @@ export default function AdminDashboard() {
     const creatorEmail = users.find(u => u.id === market.created_by)?.email;
 
     if (action === "resolved_yes" || action === "resolved_no") {
+      const sideLabel = action === "resolved_yes" ? "YES 승리" : "NO 승리";
+      if (!confirm(`정말 이 마켓을 "${sideLabel}"로 최종 확정하시겠습니까?\n\n마켓: ${market.title}\n\n이 작업은 되돌릴 수 없습니다.`)) return;
+
       const side = action === "resolved_yes" ? "yes" : "no";
       await supabase.rpc('resolve_market', { p_market_id: id, p_winning_side: side });
       
@@ -416,20 +420,44 @@ export default function AdminDashboard() {
             </div>
           ) : activeTab === "markets" ? (
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-              {markets.map(m => (
+              {/* Market Filter */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                {(["all", "pending", "active", "ended", "resolved"] as const).map(f => (
+                  <button key={f} onClick={() => setMarketFilter(f)} style={{
+                    padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none",
+                    background: marketFilter === f ? "var(--purple-primary)" : "var(--bg-secondary)",
+                    color: marketFilter === f ? "white" : "var(--text-secondary)"
+                  }}>
+                    {f === "all" ? `전체 (${markets.length})` : f === "pending" ? `대기중 (${markets.filter(m => m.status === "pending").length})` : f === "active" ? `진행중 (${markets.filter(m => m.status === "active" && (!m.end_date || new Date(m.end_date) > new Date())).length})` : f === "ended" ? `마감됨 (${markets.filter(m => m.status === "active" && m.end_date && new Date(m.end_date) <= new Date()).length})` : `판정됨 (${markets.filter(m => m.status.startsWith("resolved")).length})`}
+                  </button>
+                ))}
+              </div>
+              {markets.filter(m => {
+                if (marketFilter === "all") return true;
+                if (marketFilter === "pending") return m.status === "pending";
+                if (marketFilter === "active") return m.status === "active" && (!m.end_date || new Date(m.end_date) > new Date());
+                if (marketFilter === "ended") return m.status === "active" && m.end_date && new Date(m.end_date) <= new Date();
+                if (marketFilter === "resolved") return m.status.startsWith("resolved");
+                return true;
+              }).map(m => {
+                const isEnded = m.status === "active" && m.end_date && new Date(m.end_date) <= new Date();
+                const isResolved = m.status === "resolved_yes" || m.status === "resolved_no";
+                return (
                 <div key={m.id} style={{
                   padding: 24, borderRadius: 12, border: "1px solid var(--border)",
-                  background: m.status === "hidden" ? "var(--bg-secondary)" : (m.status === "pending" ? "rgba(245, 158, 11, 0.05)" : "transparent"),
+                  background: m.status === "hidden" ? "var(--bg-secondary)" : (m.status === "pending" ? "rgba(245, 158, 11, 0.05)" : isResolved ? "rgba(139,92,246,0.03)" : "transparent"),
                   display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16,
                   opacity: m.status === "hidden" ? 0.6 : 1
                 }}>
                   <div style={{ flex: 1, minWidth: 280 }}>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, fontWeight: 800 }}>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, fontWeight: 800, display: "flex", gap: 8, alignItems: "center" }}>
                       상태: <span style={{
                         color: m.status === "pending" ? "#f59e0b" : 
+                               isEnded ? "#f97316" :
                                m.status === "active" ? "#22d3a0" :
-                               m.status === "hidden" ? "var(--text-secondary)" : "var(--accent-no)"
-                      }}>{m.status.toUpperCase()}</span>
+                               m.status === "hidden" ? "var(--text-secondary)" : "var(--purple-primary)"
+                      }}>{isEnded ? "마감됨 (결과 대기)" : isResolved ? (m.status === "resolved_yes" ? "✅ YES 승리 확정" : "✅ NO 승리 확정") : m.status.toUpperCase()}</span>
+                      {m.end_date && <span style={{ color: "var(--text-muted)", fontSize: 11 }}>마감: {new Date(m.end_date).toLocaleString('ko-KR')}</span>}
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, textDecoration: m.status === "hidden" ? "line-through" : "none" }}>
                       {m.title}
@@ -452,7 +480,7 @@ export default function AdminDashboard() {
                       </select>
                     </div>
 
-                    {["active", "hidden"].includes(m.status) && (
+                    {!m.status.startsWith("resolved") && m.status !== "hidden" && (
                       <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                         누적 베팅: YES {formatPoints(m.yes_pool)} / NO {formatPoints(m.no_pool)} (합계: {formatPoints(m.yes_pool + m.no_pool)})
                       </div>
@@ -466,18 +494,27 @@ export default function AdminDashboard() {
                         <button onClick={() => handleMarketAction(m.id, "cancelled" as any)} style={{ padding: "8px 16px", background: "transparent", color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>거절</button>
                       </>
                     )}
-                    {m.status === "active" && (
+                    {(isEnded || m.status === "active") && !isResolved && (
                       <>
-                        <button onClick={() => setRefundModal({ marketId: m.id, title: m.title, total: m.yes_pool + m.no_pool })} style={{ padding: "8px 16px", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 8, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                          <EyeOff size={14} /> 숨김 및 전체 환불
+                        <button onClick={() => { if (!confirm(`정말 "${m.title}" 마켓을 숨기고 전액 환불 처리하시겠습니까?`)) return; setRefundModal({ marketId: m.id, title: m.title, total: m.yes_pool + m.no_pool }); }} style={{ padding: "8px 16px", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 8, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                          <EyeOff size={14} /> 환불
                         </button>
-                        <button onClick={() => handleMarketAction(m.id, "resolved_yes" as any)} style={{ padding: "8px 16px", background: "rgba(34,211,160,0.1)", color: "var(--accent-yes)", border: "1px solid var(--accent-yes)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>YES 판정</button>
-                        <button onClick={() => handleMarketAction(m.id, "resolved_no" as any)} style={{ padding: "8px 16px", background: "rgba(244,63,94,0.1)", color: "var(--accent-no)", border: "1px solid var(--accent-no)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>NO 판정</button>
+                        {isEnded && (
+                          <>
+                            <button onClick={() => handleMarketAction(m.id, "resolved_yes" as any)} style={{ padding: "8px 16px", background: "rgba(34,211,160,0.1)", color: "var(--accent-yes)", border: "1px solid var(--accent-yes)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>YES 판정</button>
+                            <button onClick={() => handleMarketAction(m.id, "resolved_no" as any)} style={{ padding: "8px 16px", background: "rgba(244,63,94,0.1)", color: "var(--accent-no)", border: "1px solid var(--accent-no)", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>NO 판정</button>
+                          </>
+                        )}
                       </>
+                    )}
+                    {isResolved && (
+                      <div style={{ padding: "8px 16px", background: "rgba(139,92,246,0.1)", borderRadius: 8, fontWeight: 700, color: "var(--purple-primary)", fontSize: 13 }}>
+                        {m.status === "resolved_yes" ? "✅ YES 승리 확정" : "✅ NO 승리 확정"}
+                      </div>
                     )}
                   </div>
                 </div>
-              ))}
+              );})}
             </div>
           ) : activeTab === "orders" ? (
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
