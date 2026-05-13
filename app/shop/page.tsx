@@ -27,6 +27,7 @@ export default function ShopPage() {
   const [pointsToUse, setPointsToUse] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [contactInfo, setContactInfo] = useState("");
+  const [emailInfo, setEmailInfo]     = useState("");
   const [paySuccess, setPaySuccess]   = useState<{ itemName: string; pointsUsed: number; cardAmount: number } | null>(null);
   const [toast, setToast]             = useState<{ msg: string; type: "success" | "warn" } | null>(null);
 
@@ -42,6 +43,7 @@ export default function ShopPage() {
           setPoints(profile.points);
           setXp(profile.xp ?? profile.points);
           setContactInfo("");
+          setEmailInfo(user.email ?? "");
         }
       }
       const { data: items } = await supabase
@@ -99,6 +101,11 @@ export default function ShopPage() {
           totalAmount: cardAmount,
           currency: "CURRENCY_KRW",
           payMethod: "CARD",
+          customer: {
+            fullName: user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "구매자",
+            email: emailInfo || user?.email || "guest@policat.kr",
+            phoneNumber: contactInfo.replace(/\D/g, ""),
+          },
         } as any);
         if (!res || res.code != null) {
           showToast(res?.message ?? "결제가 취소되었습니다.", "warn");
@@ -117,7 +124,7 @@ export default function ShopPage() {
     const verifyRes = await fetch("/api/shop-payment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentId, itemId: buyModal.id, itemName: buyModal.name, price: buyModal.price, contactInfo, pointsUsed: pointsToUse }),
+      body: JSON.stringify({ paymentId, itemId: buyModal.id, itemName: buyModal.name, price: buyModal.price, contactInfo, emailInfo: emailInfo.trim(), pointsUsed: pointsToUse }),
     });
     const verifyData = await verifyRes.json();
     if (!verifyRes.ok) {
@@ -134,6 +141,7 @@ export default function ShopPage() {
   };
 
   const isValidPhone = (v: string) => /^01[016789][- ]?\d{3,4}[- ]?\d{4}$/.test(v.replace(/\s/g, ""));
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -151,6 +159,8 @@ export default function ShopPage() {
     if (pointsToUse > 0 && !user) { showToast("포인트 사용 시 로그인이 필요합니다.", "warn"); return; }
     if (!contactInfo.trim()) { showToast("수신 전화번호를 입력해주세요.", "warn"); return; }
     if (!isValidPhone(contactInfo)) { showToast("올바른 휴대폰 번호를 입력해주세요. (예: 010-1234-5678)", "warn"); return; }
+    if (!emailInfo.trim()) { showToast("이메일 주소를 입력해주세요.", "warn"); return; }
+    if (!isValidEmail(emailInfo)) { showToast("올바른 이메일 주소를 입력해주세요.", "warn"); return; }
     if (user && xp < 500) { showToast("분석가 등급(XP 500) 이상부터 포인트 교환 가능합니다.", "warn"); return; }
     if (cardAmount > 0 && cardAmount < 100) { showToast("카드 최소 결제 금액은 100원입니다.", "warn"); return; }
     await executePayment();
@@ -438,6 +448,31 @@ export default function ShopPage() {
                         {filled && !valid && (
                           <div style={{ fontSize: 12, color: "var(--accent-no)", marginTop: 5 }}>
                             올바른 휴대폰 번호 형식이 아닙니다. (예: 010-1234-5678)
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* 이메일 */}
+                  {(() => {
+                    const filled = emailInfo.trim().length > 0;
+                    const valid  = isValidEmail(emailInfo);
+                    return (
+                      <div style={{ marginBottom: 20 }}>
+                        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
+                          이메일 주소
+                        </label>
+                        <input
+                          type="email"
+                          value={emailInfo}
+                          onChange={e => setEmailInfo(e.target.value)}
+                          placeholder="예: name@example.com"
+                          style={{ width: "100%", padding: "11px 14px", borderRadius: 8, border: `1px solid ${filled ? (valid ? "#22c55e" : "var(--accent-no)") : "var(--border)"}`, fontSize: 14, background: "var(--bg-secondary)", color: "var(--text-primary)", outline: "none", boxSizing: "border-box" }}
+                        />
+                        {filled && !valid && (
+                          <div style={{ fontSize: 12, color: "var(--accent-no)", marginTop: 5 }}>
+                            올바른 이메일 형식이 아닙니다.
                           </div>
                         )}
                       </div>

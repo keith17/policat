@@ -31,6 +31,7 @@ export default function ShopItemPage() {
   const [pointsToUse, setPointsToUse]   = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [contactInfo, setContactInfo]   = useState("");
+  const [emailInfo, setEmailInfo]       = useState("");
   const [paySuccess, setPaySuccess]           = useState(false);
   const [toast, setToast]               = useState<{ msg: string; type: "success" | "warn" } | null>(null);
 
@@ -46,6 +47,7 @@ export default function ShopItemPage() {
           setPoints(profile.points);
           setXp(profile.xp ?? profile.points);
           setContactInfo("");
+          setEmailInfo(user.email ?? "");
         }
       }
       const { data: shopItem } = await supabase
@@ -99,8 +101,8 @@ export default function ShopItemPage() {
           orderName: item.name, totalAmount: cardAmount, currency: "CURRENCY_KRW", payMethod: "CARD",
           customer: {
             fullName: user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "구매자",
-            email: user?.email ?? "guest@policat.kr",
-            phoneNumber: contactInfo.replace(/\s/g, ""),
+            email: emailInfo.trim() || user?.email || "guest@policat.kr",
+            phoneNumber: contactInfo.replace(/\D/g, ""),
           },
         } as any);
         if (!payRes || payRes.code != null) { showToast(payRes?.message ?? "결제가 취소되었습니다.", "warn"); setIsProcessing(false); return; }
@@ -109,7 +111,7 @@ export default function ShopItemPage() {
       const res = await fetch("/api/shop-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId, itemId: item.id, itemName: item.name, price: item.price, contactInfo: contactInfo.trim(), pointsUsed: pointsToUse }),
+        body: JSON.stringify({ paymentId, itemId: item.id, itemName: item.name, price: item.price, contactInfo: contactInfo.trim(), emailInfo: emailInfo.trim(), pointsUsed: pointsToUse }),
       });
       const data = await res.json();
       if (!res.ok) { showToast(data.error || "결제 실패", "warn"); setIsProcessing(false); return; }
@@ -121,6 +123,7 @@ export default function ShopItemPage() {
   };
 
   const isValidPhone = (v: string) => /^01[016789][- ]?\d{3,4}[- ]?\d{4}$/.test(v.replace(/\s/g, ""));
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -137,6 +140,8 @@ export default function ShopItemPage() {
     if (pointsToUse > 0 && !user) { showToast("포인트 사용 시 로그인이 필요합니다.", "warn"); return; }
     if (!contactInfo.trim()) { showToast("수신 전화번호를 입력해주세요.", "warn"); return; }
     if (!isValidPhone(contactInfo)) { showToast("올바른 휴대폰 번호를 입력해주세요. (예: 010-1234-5678)", "warn"); return; }
+    if (!emailInfo.trim()) { showToast("이메일 주소를 입력해주세요.", "warn"); return; }
+    if (!isValidEmail(emailInfo)) { showToast("올바른 이메일 주소를 입력해주세요.", "warn"); return; }
     await executePayment();
   };
 
@@ -285,6 +290,29 @@ export default function ShopItemPage() {
                         );
                       })()}
 
+                      {/* 이메일 (로그인) */}
+                      {(() => {
+                        const filled = emailInfo.trim().length > 0;
+                        const valid  = isValidEmail(emailInfo);
+                        return (
+                          <div style={{ marginBottom: 20 }}>
+                            <label style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8, display: "block" }}>이메일 주소</label>
+                            <input
+                              type="email"
+                              value={emailInfo}
+                              onChange={e => setEmailInfo(e.target.value)}
+                              placeholder="예: name@example.com"
+                              style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: `1px solid ${filled ? (valid ? "#22c55e" : "var(--accent-no)") : "var(--border)"}`, background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box" }}
+                            />
+                            {filled && !valid && (
+                              <div style={{ fontSize: 12, color: "var(--accent-no)", marginTop: 5 }}>
+                                올바른 이메일 형식이 아닙니다.
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                       <motion.button
                         whileTap={{ scale: 0.98 }}
                         onClick={handlePay}
@@ -294,7 +322,7 @@ export default function ShopItemPage() {
                         {isProcessing ? "처리 중…" : cardAmount > 0 ? `카드 ${cardAmount.toLocaleString()}원 + 포인트 ${pointsToUse.toLocaleString()}P 결제` : `포인트 ${pointsToUse.toLocaleString()}P로 구매`}
                       </motion.button>
                       <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 12 }}>
-                        최초 1회 본인인증 후 구매 가능 · 기프티콘은 전화번호로 발송
+                        기프티콘은 전화번호로 발송됩니다
                       </p>
                     </>
                   )}
@@ -329,6 +357,30 @@ export default function ShopItemPage() {
                       </div>
                     );
                   })()}
+
+                  {/* 이메일 (비로그인) */}
+                  {(() => {
+                    const filled = emailInfo.trim().length > 0;
+                    const valid  = isValidEmail(emailInfo);
+                    return (
+                      <div style={{ marginBottom: 20 }}>
+                        <label style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8, display: "block" }}>이메일 주소</label>
+                        <input
+                          type="email"
+                          value={emailInfo}
+                          onChange={e => setEmailInfo(e.target.value)}
+                          placeholder="예: name@example.com"
+                          style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: `1px solid ${filled ? (valid ? "#22c55e" : "var(--accent-no)") : "var(--border)"}`, background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box" }}
+                        />
+                        {filled && !valid && (
+                          <div style={{ fontSize: 12, color: "var(--accent-no)", marginTop: 5 }}>
+                            올바른 이메일 형식이 아닙니다.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   <motion.button
                     whileTap={{ scale: 0.98 }}
                     onClick={handlePay}

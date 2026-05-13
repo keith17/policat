@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { paymentId, itemId, itemName, price, contactInfo, pointsUsed = 0 } = await req.json();
+  const { paymentId, itemId, itemName, price, contactInfo, emailInfo = "", pointsUsed = 0 } = await req.json();
 
   if (!itemId || !price || !contactInfo) {
     return NextResponse.json({ error: "필수 파라미터가 누락되었습니다." }, { status: 400 });
@@ -97,6 +97,7 @@ export async function POST(req: Request) {
     item_name: itemName,
     price,
     contact_info: contactInfo,
+    email_info: emailInfo || null,
     status: "pending",
     payment_method: paymentMethod,
     payment_id: paymentId || null,
@@ -128,6 +129,7 @@ export async function POST(req: Request) {
     cardAmount,
     paymentMethod,
     contactInfo,
+    emailInfo,
   }).catch(console.error);
 
   const newPoints = pointsUsed > 0 ? currentPoints - pointsUsed : undefined;
