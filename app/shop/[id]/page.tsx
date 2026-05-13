@@ -94,8 +94,8 @@ export default function ShopItemPage() {
         const PortOne    = await import("@portone/browser-sdk/v2");
         const storeId    = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
         const channelKey = process.env.NEXT_PUBLIC_PORTONE_PAYMENT_CHANNEL_KEY;
-        if (!storeId || !channelKey) { showToast("결제 설정이 누락되었습니다.", "warn"); setIsProcessing(false); return; }
-        const pid = `order-${crypto.randomUUID()}`;
+        if (!storeId || !channelKey) { showToast("결제 설정이 누락되었습니다.", "warn"); return; }
+        const pid = crypto.randomUUID(); // 36자 (order- 접두사 제거 — PortOne 40자 제한)
         const payRes = await (PortOne as any).requestPayment({
           storeId, channelKey, paymentId: pid,
           orderName: item.name, totalAmount: cardAmount, currency: "CURRENCY_KRW", payMethod: "CARD",
@@ -105,7 +105,7 @@ export default function ShopItemPage() {
             phoneNumber: contactInfo.replace(/\D/g, ""),
           },
         } as any);
-        if (!payRes || payRes.code != null) { showToast(payRes?.message ?? "결제가 취소되었습니다.", "warn"); setIsProcessing(false); return; }
+        if (!payRes || payRes.code != null) { showToast(payRes?.message ?? "결제가 취소되었습니다.", "warn"); return; }
         paymentId = pid;
       }
       const res = await fetch("/api/shop-payment", {
@@ -114,12 +114,16 @@ export default function ShopItemPage() {
         body: JSON.stringify({ paymentId, itemId: item.id, itemName: item.name, price: item.price, contactInfo: contactInfo.trim(), emailInfo: emailInfo.trim(), pointsUsed: pointsToUse }),
       });
       const data = await res.json();
-      if (!res.ok) { showToast(data.error || "결제 실패", "warn"); setIsProcessing(false); return; }
+      if (!res.ok) { showToast(data.error || "결제 실패", "warn"); return; }
       if (data.points !== undefined) setPoints(data.points);
       if (user?.email) sendShopOrderEmail(user.email, item.name).catch(console.error);
       setPaySuccess(true);
-    } catch { showToast("결제 중 오류가 발생했습니다.", "warn"); }
-    setIsProcessing(false);
+    } catch (err) {
+      console.error(err);
+      showToast("결제 중 오류가 발생했습니다.", "warn");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const isValidPhone = (v: string) => /^01[016789][- ]?\d{3,4}[- ]?\d{4}$/.test(v.replace(/\s/g, ""));

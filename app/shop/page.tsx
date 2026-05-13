@@ -80,19 +80,17 @@ export default function ShopPage() {
   const executePayment = async () => {
     if (!buyModal) return;
     setIsProcessing(true);
-
-    let paymentId: string | undefined;
-    if (cardAmount > 0) {
-      try {
+    try {
+      let paymentId: string | undefined;
+      if (cardAmount > 0) {
         const PortOne    = await import("@portone/browser-sdk/v2");
         const storeId    = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
         const channelKey = process.env.NEXT_PUBLIC_PORTONE_PAYMENT_CHANNEL_KEY;
         if (!storeId || !channelKey) {
           showToast("카드 결제 설정이 누락되었습니다. 관리자에게 문의하세요.", "warn");
-          setIsProcessing(false);
           return;
         }
-        const pid = `order-${crypto.randomUUID()}`;
+        const pid = crypto.randomUUID(); // 36자 (order- 접두사 제거 — PortOne 40자 제한)
         const res = await PortOne.requestPayment({
           storeId, channelKey, paymentId: pid,
           orderName: pointsToUse > 0
@@ -109,35 +107,32 @@ export default function ShopPage() {
         } as any);
         if (!res || res.code != null) {
           showToast(res?.message ?? "결제가 취소되었습니다.", "warn");
-          setIsProcessing(false);
           return;
         }
         paymentId = res.paymentId;
-      } catch (err) {
-        console.error(err);
-        showToast("결제 중 오류가 발생했습니다.", "warn");
-        setIsProcessing(false);
+      }
+
+      const verifyRes = await fetch("/api/shop-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId, itemId: buyModal.id, itemName: buyModal.name, price: buyModal.price, contactInfo, emailInfo: emailInfo.trim(), pointsUsed: pointsToUse }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        showToast(verifyData.error ?? "결제 처리 실패", "warn");
         return;
       }
-    }
-
-    const verifyRes = await fetch("/api/shop-payment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentId, itemId: buyModal.id, itemName: buyModal.name, price: buyModal.price, contactInfo, emailInfo: emailInfo.trim(), pointsUsed: pointsToUse }),
-    });
-    const verifyData = await verifyRes.json();
-    if (!verifyRes.ok) {
-      showToast(verifyData.error ?? "결제 처리 실패", "warn");
+      if (verifyData.points !== undefined) setPoints(verifyData.points);
+      if (user?.email) sendShopOrderEmail(user.email, buyModal.name).catch(console.error);
+      const successData = { itemName: buyModal.name, pointsUsed: pointsToUse, cardAmount };
+      setBuyModal(null);
+      setPaySuccess(successData);
+    } catch (err) {
+      console.error(err);
+      showToast("결제 중 오류가 발생했습니다.", "warn");
+    } finally {
       setIsProcessing(false);
-      return;
     }
-    if (verifyData.points !== undefined) setPoints(verifyData.points);
-    if (user?.email) sendShopOrderEmail(user.email, buyModal.name).catch(console.error);
-    const successData = { itemName: buyModal.name, pointsUsed: pointsToUse, cardAmount };
-    setBuyModal(null);
-    setIsProcessing(false);
-    setPaySuccess(successData);
   };
 
   const isValidPhone = (v: string) => /^01[016789][- ]?\d{3,4}[- ]?\d{4}$/.test(v.replace(/\s/g, ""));
@@ -314,7 +309,7 @@ export default function ShopPage() {
           <>
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => !isProcessing && setBuyModal(null)}
+              onClick={() => setBuyModal(null)}
               style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
             />
             <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 201, width: "calc(100% - 40px)", maxWidth: 460 }}>
@@ -483,7 +478,6 @@ export default function ShopPage() {
                   <div style={{ display: "flex", gap: 10 }}>
                     <button
                       onClick={() => setBuyModal(null)}
-                      disabled={isProcessing}
                       style={{ flex: 1, padding: "13px", borderRadius: 8, background: "var(--surface-alt)", border: "none", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
                     >
                       취소
