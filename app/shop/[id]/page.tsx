@@ -96,12 +96,12 @@ export default function ShopItemPage() {
         const storeId    = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
         const channelKey = process.env.NEXT_PUBLIC_PORTONE_PAYMENT_CHANNEL_KEY;
         if (!storeId || !channelKey) { showToast("결제 설정이 누락되었습니다.", "warn"); setIsProcessing(false); return; }
-        const pid = `order-${Date.now()}`;
+        const pid = `order-${crypto.randomUUID()}`;
         const payRes = await (PortOne as any).requestPayment({
           storeId, channelKey, paymentId: pid,
-          orderName: item.name, totalAmount: cardAmount, currency: "KRW", payMethod: "CARD",
+          orderName: item.name, totalAmount: cardAmount, currency: "CURRENCY_KRW", payMethod: "CARD",
         } as any);
-        if (payRes?.code) { showToast(`카드 결제 실패: ${payRes.message || ""}`, "warn"); setIsProcessing(false); return; }
+        if (!payRes || payRes.code != null) { showToast(payRes?.message ?? "결제가 취소되었습니다.", "warn"); setIsProcessing(false); return; }
         paymentId = pid;
       }
       const res = await fetch("/api/shop-payment", {

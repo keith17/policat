@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "카드 결제 정보가 없습니다." }, { status: 400 });
     }
 
-    const secretKey = process.env.PORTONE_SECRET_KEY;
+    const secretKey = process.env.PORTONE_API_SECRET;
     if (!secretKey) {
       return NextResponse.json({ error: "결제 서버 설정 오류입니다. 관리자에게 문의하세요." }, { status: 500 });
     }
