@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
 import { formatPoints } from "@/lib/data";
 import { sendShopOrderEmail } from "@/app/actions/email";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowLeft, Coffee, Gift, Tag, Truck, Zap, ExternalLink, CreditCard, Coins, CheckCircle } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -29,10 +29,8 @@ export default function ShopItemPage() {
   const [item, setItem]                 = useState<any>(null);
   const [loading, setLoading]           = useState(true);
   const [pointsToUse, setPointsToUse]   = useState(0);
-  const [isVerified, setIsVerified]     = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [contactInfo, setContactInfo]   = useState("");
-  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [paySuccess, setPaySuccess]           = useState(false);
   const [toast, setToast]               = useState<{ msg: string; type: "success" | "warn" } | null>(null);
 
@@ -47,7 +45,6 @@ export default function ShopItemPage() {
         if (profile) {
           setPoints(profile.points);
           setXp(profile.xp ?? profile.points);
-          setIsVerified(!!profile.is_verified);
           setContactInfo("");
         }
       }
@@ -125,17 +122,21 @@ export default function ShopItemPage() {
 
   const isValidPhone = (v: string) => /^01[016789][- ]?\d{3,4}[- ]?\d{4}$/.test(v.replace(/\s/g, ""));
 
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.startsWith("010")) {
+      if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+      return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+    }
+    if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
   const handlePay = async () => {
     if (pointsToUse > 0 && !user) { showToast("포인트 사용 시 로그인이 필요합니다.", "warn"); return; }
     if (!contactInfo.trim()) { showToast("수신 전화번호를 입력해주세요.", "warn"); return; }
     if (!isValidPhone(contactInfo)) { showToast("올바른 휴대폰 번호를 입력해주세요. (예: 010-1234-5678)", "warn"); return; }
-    if (user && !isVerified) { setShowVerifyModal(true); return; }
-    await executePayment();
-  };
-
-  const handleVerifyConfirm = async () => {
-    setIsVerified(true);
-    setShowVerifyModal(false);
     await executePayment();
   };
 
@@ -271,7 +272,7 @@ export default function ShopItemPage() {
                             <input
                               type="tel"
                               value={contactInfo}
-                              onChange={e => setContactInfo(e.target.value)}
+                              onChange={e => setContactInfo(formatPhone(e.target.value))}
                               placeholder="예: 010-1234-5678"
                               style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: `1px solid ${filled ? (valid ? "#22c55e" : "var(--accent-no)") : "var(--border)"}`, background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box" }}
                             />
@@ -316,7 +317,7 @@ export default function ShopItemPage() {
                         <input
                           type="tel"
                           value={contactInfo}
-                          onChange={e => setContactInfo(e.target.value)}
+                          onChange={e => setContactInfo(formatPhone(e.target.value))}
                           placeholder="예: 010-1234-5678"
                           style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: `1px solid ${filled ? (valid ? "#22c55e" : "var(--accent-no)") : "var(--border)"}`, background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box" }}
                         />
@@ -355,48 +356,6 @@ export default function ShopItemPage() {
           </div>
         )}
       </main>
-
-      {/* 본인인증 안내 팝업 */}
-      <AnimatePresence>
-        {showVerifyModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowVerifyModal(false)}
-              style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
-            />
-            <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 301, width: "calc(100% - 40px)", maxWidth: 400 }}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.92, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92, y: 20 }}
-                style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 20, padding: "32px 28px", boxShadow: "0 24px 48px rgba(0,0,0,0.3)" }}
-              >
-                <div style={{ textAlign: "center", marginBottom: 24 }}>
-                  <div style={{ fontSize: 48, marginBottom: 12 }}>🛡️</div>
-                  <h3 style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)", marginBottom: 8 }}>본인인증 안내</h3>
-                  <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>
-                    상품 구매를 위해 최초 1회 본인인증이 필요합니다.<br />
-                    어뷰징 방지 및 안전한 기프티콘 발송을 위해 운영됩니다.
-                  </p>
-                </div>
-                <div style={{ display: "flex", gap: 10 }}>
-                  <button
-                    onClick={() => setShowVerifyModal(false)}
-                    style={{ flex: 1, padding: "13px", borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleVerifyConfirm}
-                    style={{ flex: 2, padding: "13px", borderRadius: 10, border: "none", background: "var(--purple-primary)", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
-                  >
-                    확인하고 구매하기
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          </>
-        )}
-      </AnimatePresence>
 
       {/* Toast */}
       {toast && (

@@ -26,18 +26,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "카드 최소 결제 금액은 100원입니다." }, { status: 400 });
   }
 
-  // 로그인 유저의 경우 서버에서 본인인증 여부 검증
-  if (user) {
-    const { data: profileForVerify } = await supabase
-      .from("profiles")
-      .select("is_verified")
-      .eq("id", user.id)
-      .single();
-    if (!profileForVerify?.is_verified) {
-      return NextResponse.json({ error: "본인인증이 필요합니다." }, { status: 403 });
-    }
-  }
-
   // 포인트 잔액 사전 확인
   let currentPoints = 0;
   if (pointsUsed > 0) {
