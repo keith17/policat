@@ -149,6 +149,8 @@ export default function AdminDashboard() {
     const { name, description, price, image_url, giftishow_url, subtitle, issuer_name, usage_notes, original_price, discount_rate } = newShopItem;
     const category = showNewCategory ? categoryInput : (newShopItem.category || categoryInput);
     if (!name || !category || !price) { showToast("이름, 카테고리, 가격은 필수입니다.", "warn"); return; }
+    if (parseInt(price) % 100 !== 0) { showToast("판매가는 100P 단위로 입력해주세요. (예: 4500)", "warn"); return; }
+    if (original_price && parseInt(original_price) % 100 !== 0) { showToast("정상가는 100P 단위로 입력해주세요.", "warn"); return; }
     const autoId = giftishow_url?.match(/goodsNo=(\d+)/)
       ? `gifti-${giftishow_url.match(/goodsNo=(\d+)/)![1]}`
       : `item-${Date.now()}`;
@@ -212,6 +214,8 @@ export default function AdminDashboard() {
     if (!name.trim() || !price || !category.trim()) {
       showToast("상품명, 카테고리, 판매가는 필수입니다.", "warn"); return;
     }
+    if (Number(price) % 100 !== 0) { showToast("판매가는 100P 단위로 입력해주세요. (예: 4500)", "warn"); return; }
+    if (editForm.original_price && Number(editForm.original_price) % 100 !== 0) { showToast("정상가는 100P 단위로 입력해주세요.", "warn"); return; }
     const { error } = await supabase.from("shop_items").update({
       name: editForm.name.trim(),
       category: editForm.category.trim(),
@@ -869,11 +873,11 @@ export default function AdminDashboard() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>정상가 (원)</div>
-                    <input type="number" placeholder="예: 5000" value={newShopItem.original_price} onChange={e => setNewShopItem({...newShopItem, original_price: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box" }} />
+                    <input type="number" step={100} placeholder="예: 5000" value={newShopItem.original_price} onChange={e => setNewShopItem({...newShopItem, original_price: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box" }} />
                   </div>
                   <div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>판매가 (포인트) *</div>
-                    <input type="number" placeholder="예: 4500" value={newShopItem.price} onChange={e => setNewShopItem({...newShopItem, price: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box" }} />
+                    <input type="number" step={100} placeholder="예: 4500" value={newShopItem.price} onChange={e => setNewShopItem({...newShopItem, price: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box" }} />
                   </div>
                   <div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>할인율 (%)</div>
@@ -941,11 +945,11 @@ export default function AdminDashboard() {
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
                           <div>
                             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>정상가 (원)</div>
-                            <input type="number" value={editForm.original_price} onChange={e => setEditForm({...editForm, original_price: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", fontSize: 14 }} />
+                            <input type="number" step={100} value={editForm.original_price} onChange={e => setEditForm({...editForm, original_price: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", fontSize: 14 }} />
                           </div>
                           <div>
                             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>판매가 (P) *</div>
-                            <input type="number" value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", fontSize: 14 }} />
+                            <input type="number" step={100} value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", fontSize: 14 }} />
                           </div>
                           <div>
                             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>할인율 (%)</div>

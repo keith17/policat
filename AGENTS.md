@@ -25,11 +25,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ---
 
-## 📍 현재 상태 (as of 2026-05-13)
+## 📍 현재 상태 (as of 2026-05-14)
 
-### ✅ 완료된 것 (as of 2026-05-13)
+### ✅ 완료된 것 (as of 2026-05-14)
 | 항목 | 상태 | 비고 |
 |------|------|------|
+| **(New)** 상점 상품 100P 단위 가격 제한 | ✅ 완료 | 어드민 등록/수정 시 100P 단위 아니면 toast 에러, `step={100}` 적용 |
+| **(New)** 비로그인 구매 XP/레벨 제한 없음 | ✅ 완료 | 비로그인 카드 결제 시 XP/등급 체크 없음, 포인트 사용 시에만 로그인 필요 |
+| **(New)** 상점 목록→상세 통합 | ✅ 완료 | `/shop` 목록에서 카드 클릭 시 `/shop/[id]` 상세로 이동, 모달 방식 폐기 |
 | **(New)** 약관 동의 최초 로그인 리다이렉트 | ✅ 완료 | OAuth 콜백 → `/agree` → `terms_agreed=true` 저장 후 원래 경로로 |
 | **(New)** 상점 상품 상세 페이지 `/shop/[id]` | ✅ 완료 | 이미지·설명·복합결제 UI 포함 |
 | **(New)** Giftishow URL 자동 스크래핑 | ✅ 완료 | `/fo_api/ggoods/detail` POST JSON API 직접 호출 |
@@ -141,6 +144,19 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `bets` | id, user_id, market_id, side, amount | INSERT 시 Trigger로 yes_pool/no_pool 자동 업데이트 |
 | `point_transactions` | id, user_id, amount, type, description | type: signup/bet/reward/ad_watch/ad_reward/refund/shop_purchase |
 | `shop_orders` | id, user_id, item_id, item_name, price, contact_info, status | status: pending/completed/canceled |
+
+---
+
+## 🛒 포인트 상점 정책 (Product Policies)
+
+| 정책 | 내용 |
+|------|------|
+| 상품 가격 단위 | **반드시 100P 단위**로만 등록/수정 가능. 어드민 `handleAddShopItem` / `handleUpdateShopItem`에서 `% 100 !== 0` 체크 후 toast 에러. |
+| 비로그인 구매 | 카드 결제 전용으로 구매 가능. **XP/티어 레벨 제한 없음**. 포인트를 사용할 경우에만 로그인 필요. |
+| 포인트+카드 혼합 결제 | 로그인한 유저는 포인트 슬라이더로 일부 사용 후 나머지 카드 결제 가능. |
+| 구매 시 수집 정보 | 전화번호(수신용, 하이픈 자동) + 이메일 — 두 항목 모두 필수. `shop_orders.contact_info` / `email_info` 컬럼에 저장. |
+| 관리자 알림 | 주문 시 koesig@gmail.com + tlw.seoul@gmail.com 동시 수신 (Resend). |
+| 상품 상세 경로 | `/shop` 목록 → 카드 클릭 → `/shop/[id]` 상세 페이지. 모달 방식 폐기됨. |
 
 ---
 
