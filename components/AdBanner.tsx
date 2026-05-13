@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 
 const AD_CLIENT = "ca-pub-4553206222153896";
 const AD_SLOT = "6304659289";
+const AD_INFEED_SLOT = "7515090170";
+const AD_INFEED_LAYOUT_KEY = "-gw-3+1f-3d+2z";
 
 interface AdBannerProps {
   type?: "horizontal" | "square" | "leaderboard";
@@ -40,6 +42,30 @@ export function AdBanner({ type = "horizontal", className = "" }: AdBannerProps)
     >
       <span className="ad-label">광고</span>
       <AdSenseUnit />
+    </div>
+  );
+}
+
+export function AdInFeed() {
+  const pushed = useRef(false);
+  useEffect(() => {
+    if (pushed.current) return;
+    pushed.current = true;
+    try {
+      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+    } catch {}
+  }, []);
+
+  return (
+    <div style={{ width: "100%", overflow: "hidden" }}>
+      <ins
+        className="adsbygoogle"
+        style={{ display: "block" }}
+        data-ad-format="fluid"
+        data-ad-layout-key={AD_INFEED_LAYOUT_KEY}
+        data-ad-client={AD_CLIENT}
+        data-ad-slot={AD_INFEED_SLOT}
+      />
     </div>
   );
 }

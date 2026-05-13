@@ -48,7 +48,7 @@ export default function Footer() {
                 onClick={() => (window as any).ChannelIO?.('openChat')}
                 style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14, background: "none", border: "none", padding: 0, cursor: "pointer" }}
               >
-                제휴 및 문의
+                문의하기
               </button>
             </li>
           </ul>

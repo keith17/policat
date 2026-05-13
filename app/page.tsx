@@ -8,7 +8,7 @@ import MarketCard from "@/components/MarketCard";
 import EventCard from "@/components/EventCard";
 import FeaturedCarousel, { FeaturedItem } from "@/components/FeaturedCarousel";
 import InternalBannerCarousel from "@/components/InternalBannerCarousel";
-import { AdBanner } from "@/components/AdBanner";
+import { AdBanner, AdInFeed } from "@/components/AdBanner";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
 import { markets as initialMarkets, formatPoints, getTier, tierConfig } from "@/lib/data";
@@ -377,14 +377,14 @@ export default function Home() {
             ];
 
             return gridItems.map((item, globalIndex) => {
-              // 9번째 아이템마다(PC 기준 약 3줄) 광고 삽입
-              const showAd = globalIndex > 0 && globalIndex % 9 === 0;
-              
+              // 6번째 아이템마다 인피드 광고 삽입 (전체 너비)
+              const showInFeed = globalIndex > 0 && globalIndex % 6 === 0;
+
               return (
                 <div key={`grid-item-${globalIndex}`} style={{ display: "contents" }}>
-                  {showAd && (
-                    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-                      <AdBanner type="square" className="glass-card" />
+                  {showInFeed && (
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <AdInFeed />
                     </div>
                   )}
                   {item.type === "event" ? (
