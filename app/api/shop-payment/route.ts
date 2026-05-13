@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
+import { sendAdminOrderNotification } from "@/app/actions/email";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -98,6 +99,16 @@ export async function POST(req: Request) {
     console.error("shop_orders insert error:", insertErr);
     return NextResponse.json({ error: "주문 기록 중 오류가 발생했습니다." }, { status: 500 });
   }
+
+  // Admin notification (fire and forget)
+  sendAdminOrderNotification({
+    itemName,
+    price,
+    pointsUsed,
+    cardAmount,
+    paymentMethod,
+    contactInfo,
+  }).catch(console.error);
 
   const newPoints = pointsUsed > 0 ? currentPoints - pointsUsed : undefined;
   return NextResponse.json({ success: true, points: newPoints });

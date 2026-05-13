@@ -35,7 +35,9 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
   const [adminShopItems, setAdminShopItems] = useState<any[]>([]);
-  const [newShopItem, setNewShopItem] = useState({ id: "", name: "", category: "", description: "", price: "", icon_key: "gift" });
+  const [newShopItem, setNewShopItem] = useState({ id: "", name: "", category: "", description: "", price: "", icon_key: "gift", image_url: "", giftishow_url: "" });
+  const [giftishowUrl, setGiftishowUrl] = useState("");
+  const [scraping, setScraping] = useState(false);
   const ICON_KEYS = ["gift", "coffee", "tag", "truck", "zap"];
 
   const supabase = createClient();
@@ -51,7 +53,8 @@ export default function AdminDashboard() {
     async function loadAdminData() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      if (user && user.email === "koesig@gmail.com") {
+      const ADMIN_EMAILS = ["koesig@gmail.com", "tlw.seoul@gmail.com"];
+      if (user && user.email && ADMIN_EMAILS.includes(user.email)) {
         // Fetch profiles
         const { data: profiles } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
         if (profiles) setUsers(profiles);
@@ -89,20 +92,50 @@ export default function AdminDashboard() {
   const [newEvent, setNewEvent] = useState({ title: "", description: "" });
   const [newNotice, setNewNotice] = useState({ title: "", content: "" });
 
+  const handleScrapeGiftishow = async () => {
+    if (!giftishowUrl) { showToast("URL을 입력하세요.", "warn"); return; }
+    setScraping(true);
+    try {
+      const res = await fetch("/api/giftishow-scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: giftishowUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || "가져오기 실패", "warn"); return; }
+      setNewShopItem(prev => ({
+        ...prev,
+        name: data.name || prev.name,
+        description: data.description || prev.description,
+        price: data.price ? String(data.price) : prev.price,
+        image_url: data.imageUrl || prev.image_url,
+        giftishow_url: giftishowUrl,
+      }));
+      showToast("상품 정보를 가져왔습니다. 확인 후 등록하세요.");
+    } catch {
+      showToast("스크래핑 오류", "warn");
+    } finally {
+      setScraping(false);
+    }
+  };
+
   const handleAddShopItem = async () => {
-    const { id, name, category, description, price, icon_key } = newShopItem;
+    const { id, name, category, description, price, icon_key, image_url, giftishow_url } = newShopItem;
     if (!id || !name || !category || !description || !price) { showToast("모든 필드를 입력하세요.", "warn"); return; }
     const { error } = await supabase.from("shop_items").insert({
       id: id.trim().toLowerCase().replace(/\s+/g, "-"),
       name, category, description,
       price: parseInt(price),
       icon_key,
+      image_url: image_url || null,
+      giftishow_url: giftishow_url || null,
       sort_order: adminShopItems.length + 1,
     });
     if (error) { showToast("추가 실패: " + error.message, "warn"); return; }
     const { data } = await supabase.from("shop_items").select("*").order("sort_order", { ascending: true });
     if (data) setAdminShopItems(data);
-    setNewShopItem({ id: "", name: "", category: "", description: "", price: "", icon_key: "gift" });
+    setNewShopItem({ id: "", name: "", category: "", description: "", price: "", icon_key: "gift", image_url: "", giftishow_url: "" });
+    setGiftishowUrl("");
     showToast("상품 추가 완료");
   };
 
@@ -123,7 +156,8 @@ export default function AdminDashboard() {
   if (loading) return <div className="animated-bg" style={{ minHeight: "100vh" }} />;
 
   // Authorization check
-  if (!user || user.email !== "koesig@gmail.com") {
+  const ADMIN_EMAILS = ["koesig@gmail.com", "tlw.seoul@gmail.com"];
+  if (!user || !ADMIN_EMAILS.includes(user.email)) {
     return (
       <div className="animated-bg" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         <Navbar points={0} streak={0} />
@@ -448,12 +482,12 @@ export default function AdminDashboard() {
                         <td style={{ padding: "16px 20px", textAlign: "center" }}>
                           <button 
                             onClick={() => toggleAdmin(u.id, u.is_admin)}
-                            disabled={u.email === "koesig@gmail.com"}
+                            disabled={["koesig@gmail.com", "tlw.seoul@gmail.com"].includes(u.email)}
                             style={{
-                              padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: u.email === "koesig@gmail.com" ? "not-allowed" : "pointer",
+                              padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: ["koesig@gmail.com", "tlw.seoul@gmail.com"].includes(u.email) ? "not-allowed" : "pointer",
                               border: `1px solid ${u.is_admin ? "var(--accent-no)" : "var(--border)"}`,
                               background: u.is_admin ? "rgba(244,63,94,0.1)" : "transparent",
-                              color: u.is_admin ? "var(--accent-no)" : "var(--text-secondary)"
+                              color: u.is_admin ? "var(--accent-no)" : "var(--text-secondary)",
                             }}
                           >
                             {u.is_admin ? "✔️ Admin" : "권한 부여"}
@@ -703,21 +737,47 @@ export default function AdminDashboard() {
             <div style={{ padding: 20 }}>
               <div style={{ background: "var(--bg-secondary)", borderRadius: 12, padding: 20, marginBottom: 24 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 16 }}>신규 상품 등록</h3>
+
+                {/* Giftishow URL 자동 가져오기 */}
+                <div style={{ marginBottom: 14, padding: "14px", background: "rgba(99,102,241,0.06)", borderRadius: 10, border: "1px solid rgba(99,102,241,0.2)" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", marginBottom: 8 }}>🔗 Giftishow Biz URL로 자동 가져오기</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      type="url"
+                      placeholder="https://biz.giftishow.com/ggoods/detail?goodsNo=..."
+                      value={giftishowUrl}
+                      onChange={e => setGiftishowUrl(e.target.value)}
+                      style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", fontSize: 13 }}
+                    />
+                    <button
+                      onClick={handleScrapeGiftishow}
+                      disabled={scraping}
+                      style={{ padding: "10px 18px", background: scraping ? "var(--surface-alt)" : "var(--accent)", color: scraping ? "var(--text-muted)" : "white", borderRadius: 8, fontWeight: 700, border: "none", cursor: scraping ? "not-allowed" : "pointer", whiteSpace: "nowrap", fontSize: 13 }}
+                    >
+                      {scraping ? "가져오는 중…" : "정보 가져오기"}
+                    </button>
+                  </div>
+                </div>
+
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <input type="text" placeholder="ID (영문, 예: coffee-1)" value={newShopItem.id} onChange={e => setNewShopItem({...newShopItem, id: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
                   <input type="text" placeholder="상품명" value={newShopItem.name} onChange={e => setNewShopItem({...newShopItem, name: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
                   <input type="text" placeholder="카테고리 (예: 음료/디저트)" value={newShopItem.category} onChange={e => setNewShopItem({...newShopItem, category: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
                   <input type="number" placeholder="가격 (포인트=원)" value={newShopItem.price} onChange={e => setNewShopItem({...newShopItem, price: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
                 </div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
                   <input type="text" placeholder="상품 설명" value={newShopItem.description} onChange={e => setNewShopItem({...newShopItem, description: e.target.value})} style={{ flex: 1, minWidth: 200, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
                   <select value={newShopItem.icon_key} onChange={e => setNewShopItem({...newShopItem, icon_key: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }}>
                     {ICON_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
                   </select>
-                  <button onClick={handleAddShopItem} style={{ padding: "10px 20px", background: "var(--accent-yes)", color: "white", borderRadius: 8, fontWeight: 700, border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-                    <PlusCircle size={16} /> 추가
-                  </button>
                 </div>
+                <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                  <input type="url" placeholder="이미지 URL (자동 입력 또는 수동)" value={newShopItem.image_url} onChange={e => setNewShopItem({...newShopItem, image_url: e.target.value})} style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", fontSize: 13 }} />
+                  {newShopItem.image_url && <img src={newShopItem.image_url} alt="preview" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }} />}
+                </div>
+                <button onClick={handleAddShopItem} style={{ padding: "10px 20px", background: "var(--accent-yes)", color: "white", borderRadius: 8, fontWeight: 700, border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <PlusCircle size={16} /> 상품 등록
+                </button>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

@@ -96,7 +96,45 @@ export async function sendMarketApprovalEmail(toEmail: string, marketTitle: stri
   }
 }
 
-// 4. 마켓 정산(결과) 알림 (다수의 유저에게 발송)
+// 4. 관리자 주문 알림 (koesig@gmail.com에게 발송)
+export async function sendAdminOrderNotification(params: {
+  itemName: string;
+  price: number;
+  pointsUsed: number;
+  cardAmount: number;
+  paymentMethod: string;
+  contactInfo: string;
+}) {
+  if (!resend) return { success: false };
+  const methodLabel = params.paymentMethod === "hybrid" ? `복합결제 (포인트 ${params.pointsUsed.toLocaleString()}P + 카드 ${params.cardAmount.toLocaleString()}원)` : params.paymentMethod === "card" ? `카드결제 ${params.cardAmount.toLocaleString()}원` : `포인트 ${params.pointsUsed.toLocaleString()}P`;
+  try {
+    await resend.emails.send({
+      from: SENDER_EMAIL,
+      to: ["koesig@gmail.com", "tlw.seoul@gmail.com"],
+      subject: `[Policat 상점] 새 주문: ${params.itemName}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #6366f1;">새 상점 주문이 접수되었습니다 🛒</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 16px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+            <tr style="background:#f9fafb"><td style="padding:12px 16px;font-weight:bold;color:#374151;border-bottom:1px solid #e5e7eb">상품명</td><td style="padding:12px 16px;border-bottom:1px solid #e5e7eb">${params.itemName}</td></tr>
+            <tr><td style="padding:12px 16px;font-weight:bold;color:#374151;border-bottom:1px solid #e5e7eb">총 금액</td><td style="padding:12px 16px;border-bottom:1px solid #e5e7eb">${params.price.toLocaleString()}원</td></tr>
+            <tr style="background:#f9fafb"><td style="padding:12px 16px;font-weight:bold;color:#374151;border-bottom:1px solid #e5e7eb">결제 방식</td><td style="padding:12px 16px;border-bottom:1px solid #e5e7eb">${methodLabel}</td></tr>
+            <tr><td style="padding:12px 16px;font-weight:bold;color:#374151">연락처/이메일</td><td style="padding:12px 16px">${params.contactInfo}</td></tr>
+          </table>
+          <br/>
+          <a href="https://policat.kr/admin" style="display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;margin-top:10px">어드민에서 처리하기 →</a>
+          <p style="color:#9ca3af;font-size:13px;margin-top:20px">이 메일은 Policat 상점 주문 알림입니다.</p>
+        </div>
+      `,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Admin order notification failed:", error);
+    return { success: false };
+  }
+}
+
+// 5. 마켓 정산(결과) 알림 (다수의 유저에게 발송)
 // Note: 이건 수십/수백 명에게 한 번에 발송해야 하므로 Vercel Edge Function이나 Background Job에서 실행하는 것이 좋습니다.
 export async function sendMarketSettlementEmails(bettings: any[], marketTitle: string, winningSide: string) {
   if (!resend) return { success: false };

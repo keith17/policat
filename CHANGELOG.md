@@ -5,6 +5,26 @@
 
 ---
 
+## [0.9.3] - 2026-05-13
+### 추가
+- 약관 동의 플로우 개선: 최초 로그인 시 `/agree` 페이지로 리다이렉트, 이후 재요청 없음
+- `/agree` 페이지 신설: OAuth 콜백에서 `terms_agreed=false`인 경우 약관 동의 후 원래 경로로 이동
+- 상점 상품 상세 페이지 `/shop/[id]` 신설: 이미지·설명·복합결제 UI 포함
+- Giftishow Biz URL 자동 스크래핑 `/api/giftishow-scrape`: 내부 `/fo_api/ggoods/detail` POST API 직접 호출
+- 어드민 상품 등록 폼에 Giftishow URL 입력 → 상품명·가격·이미지·설명 자동 입력 기능
+- `shop_items` 테이블에 `image_url`, `giftishow_url` 컬럼 추가 (`update_shop_items_columns.sql`)
+- 상점 구매 완료 시 관리자 이메일 알림 (`sendAdminOrderNotification`) — koesig@gmail.com + tlw.seoul@gmail.com 동시 수신
+- `tlw.seoul@gmail.com` 관리자 계정 추가 (어드민 대시보드 접근 및 이메일 알림)
+- PG 심사용 임시 로그인 `/demo-login?key=...`: 서비스 롤 키로 데모 계정 매직링크 자동 생성
+- 푸터에 통신판매신고번호 `2024-서울강남-00378호` 표기 추가
+
+### 수정
+- `app/page.tsx` 베팅 플로우에서 약관 게이트 로직 완전 제거
+- `app/auth/callback/route.ts`: 세션 교환 후 `profiles.terms_agreed` 확인 → 미동의 시 `/agree`로 리다이렉트
+- Giftishow 스크래핑: HTML 파싱(실패) → 내부 JSON API 직접 호출로 교체
+
+---
+
 ## [0.9.2] - 2026-05-13
 ### 추가
 - 푸터에 사업자 정보 추가: 트루러브웨이츠, 대표자 박기석, 서울시 강남구 테헤란로63길 12, 235호

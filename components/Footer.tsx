@@ -57,11 +57,14 @@ export default function Footer() {
 
       {/* Business Info */}
       <div style={{ maxWidth: 1200, margin: "32px auto 0", paddingTop: 24, borderTop: "1px solid var(--border)" }}>
-        <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.8, marginBottom: 12 }}>
+        <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.8, marginBottom: 4 }}>
           <strong style={{ color: "var(--text-secondary)", fontWeight: 700 }}>트루러브웨이츠</strong>
           &ensp;|&ensp;대표자: 박기석
           &ensp;|&ensp;주소: 서울특별시 강남구 테헤란로63길 12, 235호
           &ensp;|&ensp;문의: <a href="mailto:tlw.seoul@gmail.com" style={{ color: "var(--text-muted)", textDecoration: "underline" }}>tlw.seoul@gmail.com</a>
+        </p>
+        <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.8, marginBottom: 12 }}>
+          통신판매신고번호: 2024-서울강남-00378호
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <p style={{ color: "var(--text-muted)", fontSize: 12 }}>

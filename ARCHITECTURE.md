@@ -21,8 +21,14 @@
 │   ├── layout.tsx              # 앱의 최상위 HTML 구조 및 전역 프로바이더
 │   ├── page.tsx                # 메인 홈 화면 (마켓 목록, 베팅 모달)
 │   ├── admin/page.tsx          # 관리자 대시보드 (유저/마켓/주문 관리, 정산 실행)
-│   ├── auth/callback/          # Supabase OAuth 콜백 라우트
+│   ├── agree/page.tsx          # 최초 로그인 시 약관 동의 페이지 (OAuth 콜백에서 리다이렉트)
+│   ├── api/
+│   │   ├── giftishow-scrape/   # Giftishow Biz URL → 상품정보 JSON 반환 (내부 fo_api 호출)
+│   │   ├── shop-payment/       # 상점 결제 검증 (PortOne + 포인트 차감 + 주문 기록)
+│   │   └── verify/             # PortOne 본인인증 서버 검증
+│   ├── auth/callback/          # Supabase OAuth 콜백 — terms_agreed 체크 후 /agree 리다이렉트
 │   ├── create/page.tsx         # 마켓 생성 페이지
+│   ├── demo-login/page.tsx     # PG 심사용 임시 로그인 (?key= 파라미터로 접근)
 │   ├── earn/page.tsx           # 포인트 획득 페이지 (광고, 출석, 초대)
 │   ├── guide/page.tsx          # 이용 가이드 페이지
 │   ├── leaderboard/page.tsx    # XP 기반 랭킹 페이지 (Supabase 실데이터)
@@ -32,7 +38,9 @@
 │   │   ├── me/page.tsx         # 내 프로필 (잔액, 베팅 내역, 거래 이력)
 │   │   └── [id]/page.tsx       # 타 유저 프로필 (목 데이터)
 │   ├── seed/page.tsx           # DB 씨드 데이터 삽입 페이지 (개발용)
-│   ├── shop/page.tsx           # 포인트 상점 (쿠폰 교환, shop_orders 연동)
+│   ├── shop/
+│   │   ├── page.tsx            # 포인트 상점 목록 (비로그인 열람 가능, 구매 시 로그인 요구)
+│   │   └── [id]/page.tsx       # 상품 상세 페이지 (이미지, 설명, 복합결제)
 │   └── tos/page.tsx            # 이용 약관 페이지
 ├── components/                 # 반복/재사용 가능한 React 컴포넌트
 │   ├── Navbar.tsx              # 상단 네비게이션바 (포인트, 티어, 스트릭 표시)
@@ -53,6 +61,7 @@
 ├── update_xp.sql               # XP 컬럼 추가 및 resolve_market 함수 업데이트
 ├── update_shop_orders.sql      # shop_orders 테이블 및 RLS 정책
 ├── update_events.sql           # events 테이블 및 featured 기능 추가
+├── update_shop_items_columns.sql  # shop_items에 image_url, giftishow_url 컬럼 추가
 ├── CHANGELOG.md                # 버전별 변경 이력
 ├── ISSUES.md                   # 런칭 전 잔여 이슈 목록 (GitHub Issues와 동기화)
 ├── AGENTS.md                   # AI 에이전트 작업 규칙 (매 Push 시 업데이트)

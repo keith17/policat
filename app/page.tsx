@@ -9,7 +9,6 @@ import EventCard from "@/components/EventCard";
 import FeaturedCarousel, { FeaturedItem } from "@/components/FeaturedCarousel";
 import InternalBannerCarousel from "@/components/InternalBannerCarousel";
 import { AdBanner, AdInFeed } from "@/components/AdBanner";
-import TermsGate from "@/components/TermsGate";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
 import { markets as initialMarkets, formatPoints, getTier, tierConfig } from "@/lib/data";
@@ -44,9 +43,6 @@ export default function Home() {
   const [betAmount, setBetAmount] = useState(50);
   const [dailyClaimed, setDailyClaimed] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [termsAgreed, setTermsAgreed] = useState(true);
-  const [showTermsGate, setShowTermsGate] = useState(false);
-  const [pendingBet, setPendingBet] = useState<{ marketId: string; side: "yes" | "no" } | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -57,7 +53,6 @@ export default function Home() {
           setPoints(profile.points);
           setXp(profile.xp !== undefined ? profile.xp : profile.points);
           setStreak(profile.streak || 0);
-          setTermsAgreed(!!profile.terms_agreed);
         }
         // Check if daily claim already done today
         const today = new Date().toISOString().split('T')[0];
@@ -234,11 +229,6 @@ export default function Home() {
   const handleBet = (marketId: string, side: "yes" | "no", amount: number) => {
     if (!user) {
       showToast("예측에 참여하려면 로그인이 필요합니다.", "warn");
-      return;
-    }
-    if (!termsAgreed) {
-      setPendingBet({ marketId, side });
-      setShowTermsGate(true);
       return;
     }
     setBetModal({ marketId, side });
@@ -435,22 +425,6 @@ export default function Home() {
           <AdBanner type="horizontal" />
         </div>
       </section>
-
-      {/* 약관 동의 모달 (미동의 유저가 베팅 시도 시) */}
-      {showTermsGate && user && (
-        <TermsGate
-          userId={user.id}
-          onComplete={(agreed) => {
-            setShowTermsGate(false);
-            if (agreed && pendingBet) {
-              setTermsAgreed(true);
-              setBetModal(pendingBet);
-              setBetAmount(50);
-            }
-            setPendingBet(null);
-          }}
-        />
-      )}
 
       {/* Bet Modal */}
       <AnimatePresence>

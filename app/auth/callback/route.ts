@@ -10,11 +10,20 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      // NOTE: Here you could also write/check initial points and user record in your database.
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('terms_agreed')
+          .eq('id', user.id)
+          .single()
+        if (!profile?.terms_agreed) {
+          return NextResponse.redirect(`${origin}/agree?next=${encodeURIComponent(next)}`)
+        }
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
 
-  // Use a fallback redirect or return to home page
   return NextResponse.redirect(`${origin}/`)
 }

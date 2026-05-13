@@ -30,6 +30,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ### ✅ 완료된 것 (as of 2026-05-13)
 | 항목 | 상태 | 비고 |
 |------|------|------|
+| **(New)** 약관 동의 최초 로그인 리다이렉트 | ✅ 완료 | OAuth 콜백 → `/agree` → `terms_agreed=true` 저장 후 원래 경로로 |
+| **(New)** 상점 상품 상세 페이지 `/shop/[id]` | ✅ 완료 | 이미지·설명·복합결제 UI 포함 |
+| **(New)** Giftishow URL 자동 스크래핑 | ✅ 완료 | `/fo_api/ggoods/detail` POST JSON API 직접 호출 |
+| **(New)** 관리자 구매 알림 이메일 | ✅ 완료 | koesig@gmail.com + tlw.seoul@gmail.com 동시 수신 |
+| **(New)** 복수 관리자 계정 | ✅ 완료 | tlw.seoul@gmail.com 어드민 추가 |
+| **(New)** PG 심사용 임시 로그인 `/demo-login` | ✅ 완료 | `DEMO_LOGIN_KEY` 환경변수로 접근 제어 |
+| **(New)** 푸터 통신판매신고번호 표기 | ✅ 완료 | 2024-서울강남-00378호 |
 | **(New)** EventCard 디자인 경량화 및 카테고리 7종 확장 | ✅ 완료 | 보라 테두리 제거, 마켓 카드와 톤 통일, 스포츠/연예/IT/국제 추가 |
 | **(New)** 이메일 알림 연동 (Resend) | ✅ 완료 | 마켓 생성/승인/정산, 상점 구매 시 이메일 발송 |
 | **(New)** 마켓 상태 Lifecycle 고도화 | ✅ 완료 | 진행중/종료(결과대기)/확정 상태 분리, `end_date` 도입 |
@@ -58,8 +65,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | 신규 로고(브랜딩) 업데이트 | ✅ 완료 | 파란색/빨간색 원형 및 볼드 텍스트 SVG 적용 |
 | SEO 최적화 및 공지사항 | ✅ 완료 | sitemap, robots 설정 및 공지사항 UI |
 | 상점 상품 교환 본인인증 (PortOne) | ✅ 완료 | CI 기반 다계정 어뷰징 차단 구현 |
-| **(New)** 푸터 사업자 정보 | ✅ 완료 | 트루러브웨이츠, 대표자 박기석, 강남구 |
-| **(New)** 상점 카드 결제 (PortOne) | ✅ 완료 | `/api/shop-payment` 서버 검증, 중복 방지 |
+| 푸터 사업자 정보 | ✅ 완료 | 트루러브웨이츠, 대표자 박기석, 강남구 |
+| 상점 카드 결제 (PortOne) | ✅ 완료 | `/api/shop-payment` 서버 검증, 중복 방지 |
 
 ### 🔴 남은 핵심 과제 (GitHub Issues)
 | Issue | 제목 | 우선순위 | 비고 |
