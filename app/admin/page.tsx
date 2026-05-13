@@ -35,10 +35,16 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
   const [adminShopItems, setAdminShopItems] = useState<any[]>([]);
-  const [newShopItem, setNewShopItem] = useState({ id: "", name: "", category: "", description: "", price: "", icon_key: "gift", image_url: "", giftishow_url: "" });
+  const [shopCategories, setShopCategories] = useState<string[]>([]);
+  const [newShopItem, setNewShopItem] = useState({
+    name: "", category: "", description: "", subtitle: "",
+    price: "", original_price: "", discount_rate: "",
+    issuer_name: "", usage_notes: "", image_url: "", giftishow_url: "",
+  });
+  const [categoryInput, setCategoryInput] = useState("");
+  const [showNewCategory, setShowNewCategory] = useState(false);
   const [giftishowUrl, setGiftishowUrl] = useState("");
   const [scraping, setScraping] = useState(false);
-  const ICON_KEYS = ["gift", "coffee", "tag", "truck", "zap"];
 
   const supabase = createClient();
 
@@ -76,7 +82,11 @@ export default function AdminDashboard() {
 
         // Fetch shop items (admin sees all including inactive)
         const { data: si } = await supabase.from("shop_items").select("*").order("sort_order", { ascending: true });
-        if (si) setAdminShopItems(si);
+        if (si) {
+          setAdminShopItems(si);
+          const cats = [...new Set(si.map((i: any) => i.category).filter(Boolean))] as string[];
+          setShopCategories(cats);
+        }
       }
       setLoading(false);
     }
@@ -105,13 +115,23 @@ export default function AdminDashboard() {
       if (!res.ok) { showToast(data.error || "가져오기 실패", "warn"); return; }
       setNewShopItem(prev => ({
         ...prev,
-        name: data.name || prev.name,
-        description: data.description || prev.description,
-        price: data.price ? String(data.price) : prev.price,
-        image_url: data.imageUrl || prev.image_url,
-        giftishow_url: giftishowUrl,
+        name:           data.name          || prev.name,
+        category:       data.category      || prev.category,
+        description:    data.description   || prev.description,
+        subtitle:       data.subtitle      || prev.subtitle,
+        price:          data.price         ? String(data.price)          : prev.price,
+        original_price: data.originalPrice ? String(data.originalPrice)  : prev.original_price,
+        discount_rate:  data.discountRate  ? String(data.discountRate)   : prev.discount_rate,
+        issuer_name:    data.issuerName    || prev.issuer_name,
+        usage_notes:    data.usageNotes    || prev.usage_notes,
+        image_url:      data.imageUrl      || prev.image_url,
+        giftishow_url:  giftishowUrl,
       }));
-      showToast("상품 정보를 가져왔습니다. 확인 후 등록하세요.");
+      if (data.category && !shopCategories.includes(data.category)) {
+        setShopCategories(prev => [...prev, data.category]);
+      }
+      setCategoryInput(data.category || "");
+      showToast("✅ 상품 정보를 가져왔습니다. 확인 후 등록하세요.");
     } catch {
       showToast("스크래핑 오류", "warn");
     } finally {
@@ -120,22 +140,35 @@ export default function AdminDashboard() {
   };
 
   const handleAddShopItem = async () => {
-    const { id, name, category, description, price, icon_key, image_url, giftishow_url } = newShopItem;
-    if (!id || !name || !category || !description || !price) { showToast("모든 필드를 입력하세요.", "warn"); return; }
+    const { name, description, price, image_url, giftishow_url, subtitle, issuer_name, usage_notes, original_price, discount_rate } = newShopItem;
+    const category = showNewCategory ? categoryInput : (newShopItem.category || categoryInput);
+    if (!name || !category || !price) { showToast("이름, 카테고리, 가격은 필수입니다.", "warn"); return; }
+    const autoId = giftishow_url?.match(/goodsNo=(\d+)/)
+      ? `gifti-${giftishow_url.match(/goodsNo=(\d+)/)![1]}`
+      : `item-${Date.now()}`;
     const { error } = await supabase.from("shop_items").insert({
-      id: id.trim().toLowerCase().replace(/\s+/g, "-"),
+      id: autoId,
       name, category, description,
-      price: parseInt(price),
-      icon_key,
-      image_url: image_url || null,
-      giftishow_url: giftishow_url || null,
-      sort_order: adminShopItems.length + 1,
+      price:          parseInt(price),
+      original_price: original_price ? parseInt(original_price) : null,
+      discount_rate:  discount_rate  ? parseFloat(discount_rate)  : null,
+      subtitle:       subtitle       || null,
+      issuer_name:    issuer_name    || null,
+      usage_notes:    usage_notes    || null,
+      image_url:      image_url      || null,
+      giftishow_url:  giftishow_url  || null,
+      icon_key:       "gift",
+      sort_order:     adminShopItems.length + 1,
     });
     if (error) { showToast("추가 실패: " + error.message, "warn"); return; }
     const { data } = await supabase.from("shop_items").select("*").order("sort_order", { ascending: true });
-    if (data) setAdminShopItems(data);
-    setNewShopItem({ id: "", name: "", category: "", description: "", price: "", icon_key: "gift", image_url: "", giftishow_url: "" });
-    setGiftishowUrl("");
+    if (data) {
+      setAdminShopItems(data);
+      const cats = [...new Set(data.map((i: any) => i.category).filter(Boolean))] as string[];
+      setShopCategories(cats);
+    }
+    setNewShopItem({ name: "", category: "", description: "", subtitle: "", price: "", original_price: "", discount_rate: "", issuer_name: "", usage_notes: "", image_url: "", giftishow_url: "" });
+    setCategoryInput(""); setShowNewCategory(false); setGiftishowUrl("");
     showToast("상품 추가 완료");
   };
 
@@ -759,23 +792,66 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                  <input type="text" placeholder="ID (영문, 예: coffee-1)" value={newShopItem.id} onChange={e => setNewShopItem({...newShopItem, id: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
-                  <input type="text" placeholder="상품명" value={newShopItem.name} onChange={e => setNewShopItem({...newShopItem, name: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
-                  <input type="text" placeholder="카테고리 (예: 음료/디저트)" value={newShopItem.category} onChange={e => setNewShopItem({...newShopItem, category: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
-                  <input type="number" placeholder="가격 (포인트=원)" value={newShopItem.price} onChange={e => setNewShopItem({...newShopItem, price: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
+                {/* 상품명 */}
+                <input type="text" placeholder="상품명 *" value={newShopItem.name} onChange={e => setNewShopItem({...newShopItem, name: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", marginBottom: 10, boxSizing: "border-box" }} />
+
+                {/* 카테고리 */}
+                <div style={{ marginBottom: 10 }}>
+                  {!showNewCategory ? (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <select
+                        value={newShopItem.category}
+                        onChange={e => setNewShopItem({...newShopItem, category: e.target.value})}
+                        style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: newShopItem.category ? "var(--text-primary)" : "var(--text-muted)" }}
+                      >
+                        <option value="">카테고리 선택 *</option>
+                        {shopCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <button onClick={() => setShowNewCategory(true)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-secondary)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontSize: 13 }}>+ 직접 입력</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input type="text" placeholder="새 카테고리 입력" value={categoryInput} onChange={e => setCategoryInput(e.target.value)} style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--purple-primary)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
+                      <button onClick={() => setShowNewCategory(false)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-secondary)", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>목록 선택</button>
+                    </div>
+                  )}
                 </div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-                  <input type="text" placeholder="상품 설명" value={newShopItem.description} onChange={e => setNewShopItem({...newShopItem, description: e.target.value})} style={{ flex: 1, minWidth: 200, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
-                  <select value={newShopItem.icon_key} onChange={e => setNewShopItem({...newShopItem, icon_key: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }}>
-                    {ICON_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
-                  </select>
+
+                {/* 정상가 / 판매가 / 할인율 */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>정상가 (원)</div>
+                    <input type="number" placeholder="예: 5000" value={newShopItem.original_price} onChange={e => setNewShopItem({...newShopItem, original_price: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>판매가 (포인트) *</div>
+                    <input type="number" placeholder="예: 4500" value={newShopItem.price} onChange={e => setNewShopItem({...newShopItem, price: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>할인율 (%)</div>
+                    <input type="number" placeholder="예: 10" value={newShopItem.discount_rate} onChange={e => setNewShopItem({...newShopItem, discount_rate: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box" }} />
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-                  <input type="url" placeholder="이미지 URL (자동 입력 또는 수동)" value={newShopItem.image_url} onChange={e => setNewShopItem({...newShopItem, image_url: e.target.value})} style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", fontSize: 13 }} />
-                  {newShopItem.image_url && <img src={newShopItem.image_url} alt="preview" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }} />}
+
+                {/* 한줄 설명 (subtitle) */}
+                <input type="text" placeholder="목록 부제목 (예: 스타벅스 아메리카노 Tall)" value={newShopItem.subtitle} onChange={e => setNewShopItem({...newShopItem, subtitle: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", marginBottom: 10, boxSizing: "border-box" }} />
+
+                {/* 상품 설명 */}
+                <input type="text" placeholder="상품 설명 (카드 하단 안내)" value={newShopItem.description} onChange={e => setNewShopItem({...newShopItem, description: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", marginBottom: 10, boxSizing: "border-box" }} />
+
+                {/* 발행사 */}
+                <input type="text" placeholder="발행사 (예: 스타벅스커피코리아)" value={newShopItem.issuer_name} onChange={e => setNewShopItem({...newShopItem, issuer_name: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", marginBottom: 10, boxSizing: "border-box" }} />
+
+                {/* 이용안내 */}
+                <textarea placeholder="이용안내 (이용 유의사항 전문)" value={newShopItem.usage_notes} onChange={e => setNewShopItem({...newShopItem, usage_notes: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", minHeight: 80, resize: "vertical", marginBottom: 10, boxSizing: "border-box" }} />
+
+                {/* 이미지 URL + 미리보기 */}
+                <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
+                  <input type="url" placeholder="이미지 URL (스크래핑 시 자동 입력)" value={newShopItem.image_url} onChange={e => setNewShopItem({...newShopItem, image_url: e.target.value})} style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", fontSize: 13 }} />
+                  {newShopItem.image_url && <img src={newShopItem.image_url} alt="preview" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)", flexShrink: 0 }} />}
                 </div>
-                <button onClick={handleAddShopItem} style={{ padding: "10px 20px", background: "var(--accent-yes)", color: "white", borderRadius: 8, fontWeight: 700, border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+
+                <button onClick={handleAddShopItem} style={{ padding: "12px 24px", background: "var(--accent-yes)", color: "white", borderRadius: 8, fontWeight: 700, border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                   <PlusCircle size={16} /> 상품 등록
                 </button>
               </div>

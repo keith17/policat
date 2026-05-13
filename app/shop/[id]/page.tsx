@@ -164,18 +164,38 @@ export default function ShopItemPage() {
 
           <div style={{ padding: "28px 28px 32px" }}>
             <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}>{item.category}</div>
-            <h1 style={{ fontSize: 24, fontWeight: 900, color: "var(--text-primary)", marginBottom: 12, lineHeight: 1.3 }}>{item.name}</h1>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, fontSize: 15, marginBottom: 24 }}>{item.description}</p>
-
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.3 }}>{item.name}</h1>
+            {item.subtitle && (
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.5 }}>{item.subtitle}</p>
+            )}
+            {item.description && (
+              <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, fontSize: 14, marginBottom: 16 }}>{item.description}</p>
+            )}
+            {item.issuer_name && (
+              <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>발행사: <strong style={{ color: "var(--text-secondary)" }}>{item.issuer_name}</strong></div>
+            )}
             {item.giftishow_url && (
-              <a href={item.giftishow_url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--accent)", fontSize: 13, textDecoration: "none", marginBottom: 24 }}>
+              <a href={item.giftishow_url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--accent)", fontSize: 13, textDecoration: "none", marginBottom: 20 }}>
                 <ExternalLink size={14} /> Giftishow에서 확인
               </a>
             )}
 
             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 24 }}>
-              <div style={{ fontSize: 28, fontWeight: 900, color: "var(--accent)", marginBottom: 20 }}>
-                {item.price.toLocaleString()}P
+              {/* 가격 표시 */}
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
+                {item.original_price && item.original_price > item.price && (
+                  <span style={{ fontSize: 16, color: "var(--text-muted)", textDecoration: "line-through", fontFamily: "var(--font-mono)" }}>
+                    ₩{item.original_price.toLocaleString()}
+                  </span>
+                )}
+                <span style={{ fontSize: 28, fontWeight: 900, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>
+                  {item.price.toLocaleString()}P
+                </span>
+                {item.discount_rate > 0 && (
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#f43f5e", background: "rgba(244,63,94,0.1)", padding: "3px 8px", borderRadius: 6 }}>
+                    {Math.round(item.discount_rate)}% 할인
+                  </span>
+                )}
               </div>
 
               {user ? (
@@ -238,6 +258,16 @@ export default function ShopItemPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* 이용안내 */}
+        {item.usage_notes && (
+          <div style={{ marginTop: 20, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: "24px 28px" }}>
+            <h2 style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginBottom: 14 }}>이용안내</h2>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.8, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+              {item.usage_notes}
+            </p>
+          </div>
+        )}
       </main>
 
       {/* Toast */}

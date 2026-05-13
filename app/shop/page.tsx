@@ -255,35 +255,71 @@ export default function ShopPage() {
         <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))" }}>
           {shopItems.map(item => {
             const canFull = points >= item.price;
+            const hasDiscount = item.discount_rate && item.discount_rate > 0;
             return (
               <motion.div key={item.id} whileHover={{ y: -4 }} style={{
                 background: "var(--bg-card)", border: "1px solid var(--border)",
                 borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column",
-                boxShadow: "var(--shadow-sm)"
-              }}>
-                <div style={{ height: 140, background: "var(--surface-alt)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <motion.div whileHover={{ scale: 1.1 }}>
-                    {ICON_MAP[item.icon_key] ?? ICON_MAP.gift}
-                  </motion.div>
+                boxShadow: "var(--shadow-sm)", cursor: "pointer"
+              }} onClick={() => openModal(item)}>
+                {/* 이미지 / 아이콘 영역 */}
+                <div style={{ position: "relative", height: 160, background: "var(--surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                  {item.image_url ? (
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  ) : (
+                    <motion.div whileHover={{ scale: 1.1 }}>
+                      {ICON_MAP[item.icon_key] ?? ICON_MAP.gift}
+                    </motion.div>
+                  )}
+                  {/* 할인 뱃지 */}
+                  {hasDiscount && (
+                    <div style={{
+                      position: "absolute", top: 10, right: 10,
+                      background: "linear-gradient(135deg,#f43f5e,#be123c)",
+                      color: "white", fontSize: 12, fontWeight: 900,
+                      padding: "4px 8px", borderRadius: 6, letterSpacing: "-0.02em"
+                    }}>
+                      {Math.round(item.discount_rate)}% OFF
+                    </div>
+                  )}
                 </div>
-                <div style={{ padding: 20, flex: 1, display: "flex", flexDirection: "column" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", marginBottom: 6 }}>{item.category}</div>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.4 }}>{item.name}</h3>
-                  <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 20, flex: 1 }}>{item.description}</p>
+
+                <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", marginBottom: 4 }}>{item.category}</div>
+                  <h3 style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4, lineHeight: 1.4 }}>{item.name}</h3>
+                  {item.subtitle && (
+                    <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8, lineHeight: 1.4 }}>{item.subtitle}</p>
+                  )}
+                  {/* 가격 */}
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: "auto", marginBottom: 14 }}>
+                    {item.original_price && item.original_price > item.price && (
+                      <span style={{ fontSize: 12, color: "var(--text-muted)", textDecoration: "line-through", fontFamily: "var(--font-mono)" }}>
+                        ₩{item.original_price.toLocaleString()}
+                      </span>
+                    )}
+                    <span style={{ fontSize: 16, fontWeight: 900, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                      {formatPoints(item.price)}
+                    </span>
+                  </div>
                   <button
-                    onClick={() => openModal(item)}
+                    onClick={e => { e.stopPropagation(); openModal(item); }}
                     style={{
-                      width: "100%", padding: "13px 0", borderRadius: 8, border: "none",
+                      width: "100%", padding: "12px 0", borderRadius: 8, border: "none",
                       background: canFull ? "var(--accent)" : "var(--ink)",
-                      color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer",
+                      color: "white", fontWeight: 700, fontSize: 13, cursor: "pointer",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 6
                     }}
                   >
                     {!user
-                      ? <><CreditCard size={15} /> ₩{item.price.toLocaleString()} 구매하기</>
+                      ? <><CreditCard size={14} /> ₩{item.price.toLocaleString()} 구매하기</>
                       : canFull
-                        ? <><Coins size={15} /> {formatPoints(item.price)} 구매</>
-                        : <><CreditCard size={15} /> ₩{item.price.toLocaleString()} 구매</>
+                        ? <><Coins size={14} /> {formatPoints(item.price)} 구매</>
+                        : <><CreditCard size={14} /> ₩{item.price.toLocaleString()} 구매</>
                     }
                   </button>
                 </div>

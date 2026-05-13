@@ -5,6 +5,19 @@
 
 ---
 
+## [0.9.4] - 2026-05-13
+### 추가
+- 상점 상품 카드: 이미지 표시, 할인율 뱃지 (N% OFF), 목록 부제목(subtitle), 정상가 취소선 + 판매가 표시
+- 상점 상세 페이지: subtitle, 발행사(issuer_name), 정상가/할인율 표시, 이용안내(usage_notes) 섹션 추가
+- Giftishow 스크래핑: 정상가·판매가·할인율·부제목·발행사·이용안내 전체 파싱 + Supabase Storage 이미지 저장
+- `shop_items` 테이블에 `original_price`, `discount_rate`, `subtitle`, `issuer_name`, `usage_notes` 컬럼 추가 (`update_shop_items_detail.sql`)
+- 어드민 상품 등록 폼 전면 개편: ID 자동채번, 카테고리 드롭다운 + 직접입력, 정상가/판매가/할인율, 발행사, 이용안내 필드
+
+### 수정
+- 어드민 상품 등록 폼에서 수동 ID 입력 제거 (Giftishow URL의 goodsNo 또는 타임스탬프로 자동 생성)
+
+---
+
 ## [0.9.3] - 2026-05-13
 ### 추가
 - 약관 동의 플로우 개선: 최초 로그인 시 `/agree` 페이지로 리다이렉트, 이후 재요청 없음
