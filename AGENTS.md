@@ -146,9 +146,21 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## 🔑 관리자 정보
 
-- **어드민 이메일**: koesig@gmail.com
+- **어드민 이메일**: koesig@gmail.com, tlw.seoul@gmail.com
 - **어드민 접근**: `profiles.is_admin = true` 또는 JWT email 체크 (현재 혼용)
 - **어드민 대시보드**: `/admin` 페이지
+
+## 🧪 PG 심사용 데모 로그인
+
+| 항목 | 값 |
+|------|-----|
+| URL | `https://policat.vercel.app/demo-login?key=pg` |
+| 로컬 URL | `http://localhost:3004/demo-login?key=pg` |
+| 데모 계정 | `demo@policat.kr` (자동 생성, 비밀번호 불필요) |
+| 접근 키 | `.env.local`의 `DEMO_LOGIN_KEY=pg` |
+| 구현 방식 | 서버에서 Supabase Admin API로 매직링크 생성 → 자동 로그인 |
+
+> ⚠️ `DEMO_LOGIN_KEY` 값은 `.env.local`에만 존재 (git 미포함). Vercel 환경변수에도 설정 필요.
 
 ---
 
