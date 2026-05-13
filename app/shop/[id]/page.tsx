@@ -177,41 +177,56 @@ export default function ShopItemPage() {
             </div>
           )}
 
-          <div style={{ padding: "28px 28px 32px" }}>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}>{item.category}</div>
-            <h1 style={{ fontSize: 24, fontWeight: 900, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.3 }}>{item.name}</h1>
-            {item.subtitle && (
-              <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.5 }}>{item.subtitle}</p>
-            )}
-            {item.description && (
-              <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, fontSize: 14, marginBottom: 16 }}>{item.description}</p>
-            )}
-            {item.issuer_name && (
-              <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>발행사: <strong style={{ color: "var(--text-secondary)" }}>{item.issuer_name}</strong></div>
-            )}
-            {item.giftishow_url && (
-              <a href={item.giftishow_url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--accent)", fontSize: 13, textDecoration: "none", marginBottom: 20 }}>
-                <ExternalLink size={14} /> Giftishow에서 확인
-              </a>
-            )}
+          <div style={{ padding: 0 }}>
+            {/* 상품 정보 */}
+            <div style={{ padding: "24px 24px 20px" }}>
+              <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, color: "var(--accent)", background: "rgba(99,102,241,0.12)", padding: "3px 10px", borderRadius: 20, marginBottom: 10 }}>{item.category}</span>
+              <h1 style={{ fontSize: 22, fontWeight: 900, color: "var(--text-primary)", lineHeight: 1.35, marginBottom: item.subtitle ? 6 : 0 }}>{item.name}</h1>
+              {item.subtitle && (
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 14px" }}>{item.subtitle}</p>
+              )}
 
-            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 24 }}>
-              {/* 가격 표시 */}
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
+              {/* 발행사 + 외부링크 한 줄 */}
+              {(item.issuer_name || item.giftishow_url) && (
+                <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14, flexWrap: "wrap" }}>
+                  {item.issuer_name && (
+                    <span style={{ fontSize: 13, color: "var(--text-muted)" }}>발행사: <strong style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{item.issuer_name}</strong></span>
+                  )}
+                  {item.giftishow_url && (
+                    <a href={item.giftishow_url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--accent)", fontSize: 13, textDecoration: "none" }}>
+                      <ExternalLink size={13} /> Giftishow에서 확인
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* 상품 설명 */}
+              {item.description && (
+                <div style={{ marginBottom: 16, padding: "12px 14px", background: "var(--bg-secondary)", borderRadius: 10 }}>
+                  <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.8, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{item.description}</p>
+                </div>
+              )}
+
+              {/* 가격 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 {item.original_price && item.original_price > item.price && (
-                  <span style={{ fontSize: 16, color: "var(--text-muted)", textDecoration: "line-through", fontFamily: "var(--font-mono)" }}>
+                  <span style={{ fontSize: 15, color: "var(--text-muted)", textDecoration: "line-through" }}>
                     ₩{item.original_price.toLocaleString()}
                   </span>
                 )}
-                <span style={{ fontSize: 28, fontWeight: 900, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>
+                <span style={{ fontSize: 26, fontWeight: 900, color: "var(--accent)" }}>
                   {item.price.toLocaleString()}P
                 </span>
                 {item.discount_rate > 0 && (
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#f43f5e", background: "rgba(244,63,94,0.1)", padding: "3px 8px", borderRadius: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#f43f5e", background: "rgba(244,63,94,0.1)", padding: "3px 8px", borderRadius: 6 }}>
                     {Math.round(item.discount_rate)}% 할인
                   </span>
                 )}
               </div>
+            </div>
+
+            {/* 구매 폼 */}
+            <div style={{ borderTop: "1px solid var(--border)", padding: "20px 24px 28px" }}>
 
               {user ? (
                 <>

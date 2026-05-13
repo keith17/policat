@@ -45,6 +45,12 @@ export default function AdminDashboard() {
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [giftishowUrl, setGiftishowUrl] = useState("");
   const [scraping, setScraping] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "", category: "", description: "", subtitle: "",
+    price: "", original_price: "", discount_rate: "",
+    issuer_name: "", usage_notes: "", image_url: "", giftishow_url: "",
+  });
 
   const supabase = createClient();
 
@@ -182,6 +188,48 @@ export default function AdminDashboard() {
     await supabase.from("shop_items").delete().eq("id", id);
     setAdminShopItems(prev => prev.filter(i => i.id !== id));
     showToast("상품 삭제 완료");
+  };
+
+  const handleStartEdit = (item: any) => {
+    setEditingItemId(item.id);
+    setEditForm({
+      name: item.name ?? "",
+      category: item.category ?? "",
+      description: item.description ?? "",
+      subtitle: item.subtitle ?? "",
+      price: item.price?.toString() ?? "",
+      original_price: item.original_price?.toString() ?? "",
+      discount_rate: item.discount_rate?.toString() ?? "",
+      issuer_name: item.issuer_name ?? "",
+      usage_notes: item.usage_notes ?? "",
+      image_url: item.image_url ?? "",
+      giftishow_url: item.giftishow_url ?? "",
+    });
+  };
+
+  const handleUpdateShopItem = async () => {
+    const { name, price, category } = editForm;
+    if (!name.trim() || !price || !category.trim()) {
+      showToast("상품명, 카테고리, 판매가는 필수입니다.", "warn"); return;
+    }
+    const { error } = await supabase.from("shop_items").update({
+      name: editForm.name.trim(),
+      category: editForm.category.trim(),
+      description: editForm.description.trim() || null,
+      subtitle: editForm.subtitle.trim() || null,
+      price: Number(editForm.price),
+      original_price: editForm.original_price ? Number(editForm.original_price) : null,
+      discount_rate: editForm.discount_rate ? Number(editForm.discount_rate) : null,
+      issuer_name: editForm.issuer_name.trim() || null,
+      usage_notes: editForm.usage_notes.trim() || null,
+      image_url: editForm.image_url.trim() || null,
+      giftishow_url: editForm.giftishow_url.trim() || null,
+    }).eq("id", editingItemId!);
+    if (error) { showToast("수정 실패: " + error.message, "warn"); return; }
+    const { data } = await supabase.from("shop_items").select("*").order("sort_order", { ascending: true });
+    if (data) setAdminShopItems(data);
+    setEditingItemId(null);
+    showToast("상품 수정 완료");
   };
 
   // (Data loading moved up)
@@ -858,21 +906,66 @@ export default function AdminDashboard() {
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {adminShopItems.map(item => (
-                  <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 18px", borderRadius: 10, border: `1px solid ${item.is_active ? "var(--border)" : "rgba(0,0,0,0.1)"}`, background: item.is_active ? "var(--bg-card)" : "var(--bg-secondary)", opacity: item.is_active ? 1 : 0.55 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 800, fontSize: 15, color: "var(--text-primary)" }}>{item.name}</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                        [{item.id}] · {item.category} · {item.price.toLocaleString()}P · 아이콘: {item.icon_key}
+                  <div key={item.id} style={{ borderRadius: 10, border: `1px solid ${editingItemId === item.id ? "var(--accent)" : item.is_active ? "var(--border)" : "rgba(0,0,0,0.1)"}`, background: item.is_active ? "var(--bg-card)" : "var(--bg-secondary)", opacity: item.is_active ? 1 : 0.55, overflow: "hidden" }}>
+                    {/* 헤더 행 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 18px" }}>
+                      {item.image_url && <img src={item.image_url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, flexShrink: 0, border: "1px solid var(--border)" }} />}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 800, fontSize: 15, color: "var(--text-primary)" }}>{item.name}</div>
+                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                          {item.category} · {item.price.toLocaleString()}P
+                          {item.discount_rate > 0 && <span style={{ color: "#f43f5e", marginLeft: 6 }}>{item.discount_rate}% 할인</span>}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                        <button onClick={() => editingItemId === item.id ? setEditingItemId(null) : handleStartEdit(item)} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${editingItemId === item.id ? "var(--accent)" : "var(--border)"}`, background: editingItemId === item.id ? "rgba(99,102,241,0.15)" : "transparent", color: editingItemId === item.id ? "var(--accent)" : "var(--text-secondary)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                          {editingItemId === item.id ? "닫기" : "수정"}
+                        </button>
+                        <button onClick={() => handleToggleShopItem(item.id, item.is_active)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid var(--border)", background: item.is_active ? "rgba(34,211,160,0.1)" : "rgba(244,63,94,0.1)", color: item.is_active ? "var(--accent-yes)" : "var(--accent-no)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                          {item.is_active ? "활성" : "비활성"}
+                        </button>
+                        <button onClick={() => handleDeleteShopItem(item.id)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(244,63,94,0.3)", background: "rgba(244,63,94,0.1)", color: "var(--accent-no)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                          삭제
+                        </button>
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => handleToggleShopItem(item.id, item.is_active)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid var(--border)", background: item.is_active ? "rgba(34,211,160,0.1)" : "rgba(244,63,94,0.1)", color: item.is_active ? "var(--accent-yes)" : "var(--accent-no)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                        {item.is_active ? "활성" : "비활성"}
-                      </button>
-                      <button onClick={() => handleDeleteShopItem(item.id)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(244,63,94,0.3)", background: "rgba(244,63,94,0.1)", color: "var(--accent-no)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                        삭제
-                      </button>
-                    </div>
+
+                    {/* 인라인 수정 폼 */}
+                    {editingItemId === item.id && (
+                      <div style={{ padding: "16px 18px 18px", borderTop: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
+                        <input type="text" placeholder="상품명 *" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", marginBottom: 8, boxSizing: "border-box", fontSize: 14 }} />
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                          <input type="text" placeholder="카테고리 *" value={editForm.category} onChange={e => setEditForm({...editForm, category: e.target.value})} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", fontSize: 14 }} />
+                          <input type="text" placeholder="발행사" value={editForm.issuer_name} onChange={e => setEditForm({...editForm, issuer_name: e.target.value})} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", fontSize: 14 }} />
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>정상가 (원)</div>
+                            <input type="number" value={editForm.original_price} onChange={e => setEditForm({...editForm, original_price: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", fontSize: 14 }} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>판매가 (P) *</div>
+                            <input type="number" value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", fontSize: 14 }} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>할인율 (%)</div>
+                            <input type="number" value={editForm.discount_rate} onChange={e => setEditForm({...editForm, discount_rate: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", fontSize: 14 }} />
+                          </div>
+                        </div>
+                        <input type="text" placeholder="부제목 (목록 표시용)" value={editForm.subtitle} onChange={e => setEditForm({...editForm, subtitle: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", marginBottom: 8, boxSizing: "border-box", fontSize: 14 }} />
+                        <textarea placeholder="상품 설명" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", minHeight: 60, resize: "vertical", marginBottom: 8, boxSizing: "border-box", fontSize: 14 }} />
+                        <textarea placeholder="이용안내" value={editForm.usage_notes} onChange={e => setEditForm({...editForm, usage_notes: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", minHeight: 80, resize: "vertical", marginBottom: 8, boxSizing: "border-box", fontSize: 14 }} />
+                        <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
+                          <input type="url" placeholder="이미지 URL" value={editForm.image_url} onChange={e => setEditForm({...editForm, image_url: e.target.value})} style={{ flex: 1, padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", fontSize: 13 }} />
+                          {editForm.image_url && <img src={editForm.image_url} alt="preview" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)", flexShrink: 0 }} />}
+                        </div>
+                        <input type="url" placeholder="Giftishow URL" value={editForm.giftishow_url} onChange={e => setEditForm({...editForm, giftishow_url: e.target.value})} style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", marginBottom: 12, boxSizing: "border-box", fontSize: 13 }} />
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={handleUpdateShopItem} style={{ padding: "10px 20px", background: "var(--accent)", color: "white", borderRadius: 8, fontWeight: 700, border: "none", cursor: "pointer", fontSize: 14 }}>저장</button>
+                          <button onClick={() => setEditingItemId(null)} style={{ padding: "10px 16px", background: "transparent", color: "var(--text-secondary)", borderRadius: 8, fontWeight: 700, border: "1px solid var(--border)", cursor: "pointer", fontSize: 14 }}>취소</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {adminShopItems.length === 0 && <div style={{ color: "var(--text-muted)", textAlign: "center", padding: 40 }}>등록된 상품이 없습니다.</div>}
