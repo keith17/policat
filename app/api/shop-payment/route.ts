@@ -26,6 +26,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "카드 최소 결제 금액은 100원입니다." }, { status: 400 });
   }
 
+  // 로그인 유저의 경우 서버에서 본인인증 여부 검증
+  if (user) {
+    const { data: profileForVerify } = await supabase
+      .from("profiles")
+      .select("is_verified")
+      .eq("id", user.id)
+      .single();
+    if (!profileForVerify?.is_verified) {
+      return NextResponse.json({ error: "본인인증이 필요합니다." }, { status: 403 });
+    }
+  }
+
   // 포인트 잔액 사전 확인
   let currentPoints = 0;
   if (pointsUsed > 0) {
@@ -104,6 +116,19 @@ export async function POST(req: Request) {
 
   if (insertErr) {
     console.error("shop_orders insert error:", insertErr);
+    // 주문 기록 실패 시 차감된 포인트 복구
+    if (pointsUsed > 0) {
+      await supabase
+        .from("profiles")
+        .update({ points: currentPoints })
+        .eq("id", user!.id);
+      await supabase.from("point_transactions").insert({
+        user_id: user!.id,
+        amount: pointsUsed,
+        type: "refund",
+        description: `주문 실패로 인한 포인트 복구: ${itemName}`,
+      });
+    }
     return NextResponse.json({ error: "주문 기록 중 오류가 발생했습니다." }, { status: 500 });
   }
 

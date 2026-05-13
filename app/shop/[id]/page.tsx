@@ -93,14 +93,26 @@ export default function ShopItemPage() {
       let paymentId: string | undefined;
       if (cardAmount > 0) {
         const PortOne    = await import("@portone/browser-sdk/v2");
+        const portone    = (PortOne as any).default ?? PortOne;
         const storeId    = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
         const channelKey = process.env.NEXT_PUBLIC_PORTONE_PAYMENT_CHANNEL_KEY;
         if (!storeId || !channelKey) { showToast("결제 설정이 누락되었습니다.", "warn"); setIsProcessing(false); return; }
         const pid = `order-${crypto.randomUUID()}`;
-        const payRes = await (PortOne as any).requestPayment({
-          storeId, channelKey, paymentId: pid,
-          orderName: item.name, totalAmount: cardAmount, currency: "CURRENCY_KRW", payMethod: "CARD",
-        } as any);
+        const payRes = await portone.requestPayment({
+          storeId,
+          channelKey,
+          paymentId: pid,
+          orderName: item.name,
+          totalAmount: cardAmount,
+          currency: "KRW",
+          payMethod: "CARD",
+          // KG이니시스 PC 결제 시 customer 필드 필수
+          customer: {
+            fullName: user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "구매자",
+            email: user?.email ?? "guest@policat.kr",
+            phoneNumber: contactInfo.replace(/\s/g, ""),
+          },
+        });
         if (!payRes || payRes.code != null) { showToast(payRes?.message ?? "결제가 취소되었습니다.", "warn"); setIsProcessing(false); return; }
         paymentId = pid;
       }
