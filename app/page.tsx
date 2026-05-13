@@ -289,14 +289,16 @@ export default function Home() {
     setXp(newXp);
     setDailyClaimed(true);
     
-    await supabase.from("profiles").update({ points: newPoints, xp: newXp }).eq("id", user.id);
+    const newStreak = (streak || 0) + 1;
+    setStreak(newStreak);
+    await supabase.from("profiles").update({ points: newPoints, xp: newXp, streak: newStreak }).eq("id", user.id);
     await supabase.from("point_transactions").insert({
       user_id: user.id,
       amount: bonus,
       type: "reward",
       description: "출석 체크 보상"
     });
-    
+
     showToast(`🌅 출석 체크 완료! +${bonus}P`, "success");
   };
 

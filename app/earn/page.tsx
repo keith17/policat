@@ -89,6 +89,9 @@ export default function EarnPage() {
       return;
     }
     setDailyClaimed(true);
+    const newStreak = (streak || 0) + 1;
+    await supabase.from("profiles").update({ streak: newStreak }).eq("id", user.id);
+    setStreak(newStreak);
     earnPoints(5, "출석 체크 완료!");
   };
 
@@ -107,8 +110,16 @@ export default function EarnPage() {
   const handleAdComplete = async (isCompleted: boolean) => {
     setShowAdModal(false);
     if (!isCompleted || !user) return;
-    setVideoCount(c => c + 1);
-    await earnPoints(AD_REWARD_AMOUNT, "광고 시청 리워드", "ad_reward");
+    const res = await fetch("/api/ad-reward", { method: "POST" });
+    const json = await res.json();
+    if (res.ok) {
+      setPoints(json.points);
+      setXp(json.xp);
+      setVideoCount(c => c + 1);
+      showToast(`✅ 광고 시청 완료! +${json.earned}P`);
+    } else {
+      showToast(json.error ?? "오류가 발생했습니다.");
+    }
   };
 
   const copyInvite = async () => {

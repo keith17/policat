@@ -68,8 +68,7 @@ export default function AdRewardModal({ onAcknowledge, rewardAmount }: AdRewardM
                 스폰서 메시지 시청 중…
               </h2>
               <p style={{ color: "var(--text-secondary)", marginBottom: 24, lineHeight: 1.6, fontSize: 14 }}>
-                광고 시청 후 즉시 포인트가 지급됩니다.<br />
-                가상 시뮬레이션입니다.
+                스폰서 메시지 시청 후 포인트가 즉시 지급됩니다.
               </p>
 
               {/* Progress bar */}
