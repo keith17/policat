@@ -19,7 +19,7 @@ async function generateDemoMagicLink(origin: string): Promise<string | null> {
   let { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email: DEMO_EMAIL,
-    options: { redirectTo: `${origin}/` },
+    options: { redirectTo: `${origin}/auth/callback` },
   });
 
   if (error) {
@@ -45,7 +45,7 @@ async function generateDemoMagicLink(origin: string): Promise<string | null> {
     const retry = await admin.auth.admin.generateLink({
       type: "magiclink",
       email: DEMO_EMAIL,
-      options: { redirectTo: `${origin}/` },
+      options: { redirectTo: `${origin}/auth/callback` },
     });
     data  = retry.data;
     error = retry.error;

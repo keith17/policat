@@ -154,7 +154,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 | 항목 | 값 |
 |------|-----|
-| URL | `https://policat.vercel.app/demo-login?key=pg` |
+| URL | `https://policat.kr/demo-login?key=pg` |
 | 로컬 URL | `http://localhost:3004/demo-login?key=pg` |
 | 데모 계정 | `demo@policat.kr` (자동 생성, 비밀번호 불필요) |
 | 접근 키 | `.env.local`의 `DEMO_LOGIN_KEY=pg` |
