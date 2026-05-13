@@ -61,8 +61,7 @@ export default function ShopPage() {
 
   const openModal = (item: any) => {
     setBuyModal(item);
-    // 기본: 가능한 최대 포인트 사용
-    setPointsToUse(Math.min(points, item.price));
+    setPointsToUse(user ? Math.min(points, item.price) : 0);
   };
 
   const cardAmount = buyModal ? buyModal.price - pointsToUse : 0;
@@ -107,7 +106,12 @@ export default function ShopPage() {
   };
 
   const handlePay = async () => {
-    if (!buyModal || !user) return;
+    if (!buyModal) return;
+    if (!user) {
+      showToast("구매하려면 로그인이 필요합니다.", "warn");
+      setBuyModal(null);
+      return;
+    }
     if (!contactInfo.trim()) { showToast("수신 연락처를 입력해주세요.", "warn"); return; }
     if (xp < 500) { showToast("분석가 등급(XP 500) 이상부터 교환 가능합니다.", "warn"); return; }
     if (cardAmount > 0 && cardAmount < 100) { showToast("카드 최소 결제 금액은 100원입니다. 포인트 사용량을 조절해주세요.", "warn"); return; }
@@ -189,45 +193,61 @@ export default function ShopPage() {
     showToast(`✅ ${payLabel}`, "success");
   };
 
-  if (!user && !loading) {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
-        <Navbar points={0} xp={0} streak={0} />
-        <main style={{ maxWidth: 600, margin: "0 auto", padding: "120px 20px", textAlign: "center" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🛍️</div>
-          <p style={{ color: "var(--text-secondary)", fontSize: 15 }}>상점을 이용하려면 로그인이 필요합니다.</p>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div style={{ minHeight: "100vh", paddingBottom: 80, background: "var(--bg-primary)" }}>
       <Navbar points={points} xp={xp} streak={0} />
 
       <main style={{ maxWidth: 1000, margin: "0 auto", padding: "100px 20px 40px" }}>
-        <section style={{ textAlign: "center", marginBottom: 40 }}>
+        <section style={{ textAlign: "center", marginBottom: 32 }}>
           <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 12, letterSpacing: "-0.02em", color: "var(--text-primary)" }}>포인트 상점</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.6 }}>
             포인트와 카드를 자유롭게 섞어서 결제하세요.
           </p>
         </section>
 
-        {/* 잔액 */}
-        {user && (
+        {/* 신용카드 안내 배너 */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 14, padding: "16px 20px",
+          background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(6,182,212,0.10))",
+          border: "1px solid rgba(99,102,241,0.25)", borderRadius: 12, marginBottom: 24
+        }}>
+          <div style={{ fontSize: 28, flexShrink: 0 }}>💳</div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)", marginBottom: 2 }}>
+              포인트 없이도 구매 가능!
+            </div>
+            <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+              포인트가 부족하거나 없어도 신용카드로 바로 구매할 수 있어요.
+              포인트와 카드를 섞어서 결제하면 더욱 저렴하게!
+            </div>
+          </div>
+        </div>
+
+        {/* 보유 포인트 (로그인 시) */}
+        {user ? (
           <div style={{
             display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center",
-            padding: 24, background: "var(--bg-card)", border: "1px solid var(--border)",
-            borderRadius: 12, marginBottom: 40, gap: 16
+            padding: 20, background: "var(--bg-card)", border: "1px solid var(--border)",
+            borderRadius: 12, marginBottom: 32, gap: 16
           }}>
             <div>
               <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>보유 포인트</div>
-              <div style={{ fontSize: 30, fontWeight: 900, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>{formatPoints(points)}</div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>{formatPoints(points)}</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>포인트와 신용카드를 원하는 비율로 혼합 결제 가능합니다.</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>포인트와 신용카드 혼합 결제 가능합니다.</div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>포인트 교환 시 XP(티어)는 유지됩니다.</div>
             </div>
+          </div>
+        ) : (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 12, padding: "14px 18px",
+            background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, marginBottom: 32
+          }}>
+            <span style={{ fontSize: 18 }}>🔑</span>
+            <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+              <strong style={{ color: "var(--text-primary)" }}>로그인</strong>하면 포인트를 사용해 더 저렴하게 구매할 수 있어요.
+            </span>
           </div>
         )}
 
@@ -259,7 +279,12 @@ export default function ShopPage() {
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 6
                     }}
                   >
-                    {canFull ? <><Coins size={15} /> {formatPoints(item.price)} 구매</> : <><CreditCard size={15} /> ₩{item.price.toLocaleString()} 구매</>}
+                    {!user
+                      ? <><CreditCard size={15} /> ₩{item.price.toLocaleString()} 구매하기</>
+                      : canFull
+                        ? <><Coins size={15} /> {formatPoints(item.price)} 구매</>
+                        : <><CreditCard size={15} /> ₩{item.price.toLocaleString()} 구매</>
+                    }
                   </button>
                 </div>
               </motion.div>

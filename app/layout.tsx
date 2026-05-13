@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Footer from "@/components/Footer";
-import TermsGate from "@/components/TermsGate";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -42,7 +41,6 @@ ChannelIO('boot',{"pluginKey":"9f4d4b97-4990-4df1-8879-ea583562aa60","hideChanne
         />
       </head>
       <body style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <TermsGate />
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           {children}
         </div>
