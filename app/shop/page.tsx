@@ -60,9 +60,11 @@ export default function ShopPage() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  const MIN_POINTS_TO_USE = 1000;
+
   const openModal = (item: any) => {
     setBuyModal(item);
-    setPointsToUse(user ? Math.min(points, item.price) : 0);
+    setPointsToUse(user && points >= MIN_POINTS_TO_USE ? Math.min(points, item.price) : 0);
   };
 
   const cardAmount = buyModal ? buyModal.price - pointsToUse : 0;
@@ -307,7 +309,7 @@ export default function ShopPage() {
 
                 <div style={{ padding: "0 24px 24px" }}>
                   {/* 포인트 슬라이더 */}
-                  <div style={{ background: "var(--surface-alt)", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                  <div style={{ background: "var(--surface-alt)", borderRadius: 12, padding: 16, marginBottom: 16, opacity: points < MIN_POINTS_TO_USE ? 0.5 : 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
                         <Coins size={15} color="var(--accent)" /> 포인트 사용
@@ -317,37 +319,44 @@ export default function ShopPage() {
                       </span>
                     </div>
 
-                    <input
-                      type="range"
-                      min={0}
-                      max={Math.min(points, buyModal.price)}
-                      step={100}
-                      value={pointsToUse}
-                      onChange={e => setPointsToUse(Number(e.target.value))}
-                      style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }}
-                    />
-
-                    {/* 빠른 선택 */}
-                    <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-                      {[
-                        { label: "사용 안 함", val: 0 },
-                        { label: "절반", val: Math.floor(Math.min(points, buyModal.price) / 2 / 100) * 100 },
-                        { label: "전부 사용", val: Math.min(points, buyModal.price) },
-                      ].map(({ label, val }) => (
-                        <button
-                          key={label}
-                          onClick={() => setPointsToUse(val)}
-                          style={{
-                            padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                            border: pointsToUse === val ? "1px solid var(--accent)" : "1px solid var(--border)",
-                            background: pointsToUse === val ? "rgba(var(--accent-rgb),0.1)" : "transparent",
-                            color: pointsToUse === val ? "var(--accent)" : "var(--text-secondary)",
-                          }}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
+                    {points < MIN_POINTS_TO_USE ? (
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "6px 0" }}>
+                        포인트 사용은 최소 {MIN_POINTS_TO_USE.toLocaleString()}P 이상 보유 시 가능합니다. (현재 {points.toLocaleString()}P)
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="range"
+                          min={0}
+                          max={Math.min(points, buyModal.price)}
+                          step={100}
+                          value={pointsToUse}
+                          onChange={e => setPointsToUse(Number(e.target.value))}
+                          style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }}
+                        />
+                        {/* 빠른 선택 */}
+                        <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                          {[
+                            { label: "사용 안 함", val: 0 },
+                            { label: "절반", val: Math.floor(Math.min(points, buyModal.price) / 2 / 100) * 100 },
+                            { label: "전부 사용", val: Math.min(points, buyModal.price) },
+                          ].map(({ label, val }) => (
+                            <button
+                              key={label}
+                              onClick={() => setPointsToUse(val)}
+                              style={{
+                                padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                                border: pointsToUse === val ? "1px solid var(--accent)" : "1px solid var(--border)",
+                                background: pointsToUse === val ? "rgba(var(--accent-rgb),0.1)" : "transparent",
+                                color: pointsToUse === val ? "var(--accent)" : "var(--text-secondary)",
+                              }}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* 결제 요약 */}

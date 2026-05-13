@@ -63,8 +63,10 @@ export default function ShopItemPage() {
     loadData();
   }, [supabase, itemId]);
 
+  const MIN_POINTS_TO_USE = 1000;
+
   useEffect(() => {
-    if (item && user) setPointsToUse(Math.min(points, item.price));
+    if (item && user) setPointsToUse(points >= MIN_POINTS_TO_USE ? Math.min(points, item.price) : 0);
   }, [item, user, points]);
 
   const showToast = (msg: string, type: "success" | "warn" = "success") => {
@@ -186,24 +188,32 @@ export default function ShopItemPage() {
               {user ? (
                 <>
                   {/* Points slider */}
-                  <div style={{ marginBottom: 20 }}>
+                  <div style={{ marginBottom: 20, opacity: points < MIN_POINTS_TO_USE ? 0.5 : 1 }}>
                     <label style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
                       <span><Coins size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />포인트 사용</span>
                       <span style={{ fontWeight: 700, color: "var(--accent)" }}>{pointsToUse.toLocaleString()}P (보유: {formatPoints(points)})</span>
                     </label>
-                    <input
-                      type="range"
-                      min={0}
-                      max={Math.min(points, item.price)}
-                      step={100}
-                      value={pointsToUse}
-                      onChange={e => setPointsToUse(Number(e.target.value))}
-                      style={{ width: "100%" }}
-                    />
-                    {cardAmount > 0 && (
-                      <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
-                        <CreditCard size={13} /> 카드 결제: <strong style={{ color: "var(--text-primary)", marginLeft: 4 }}>{cardAmount.toLocaleString()}원</strong>
+                    {points < MIN_POINTS_TO_USE ? (
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "6px 0" }}>
+                        포인트 사용은 최소 {MIN_POINTS_TO_USE.toLocaleString()}P 이상 보유 시 가능합니다. (현재 {points.toLocaleString()}P)
                       </div>
+                    ) : (
+                      <>
+                        <input
+                          type="range"
+                          min={0}
+                          max={Math.min(points, item.price)}
+                          step={100}
+                          value={pointsToUse}
+                          onChange={e => setPointsToUse(Number(e.target.value))}
+                          style={{ width: "100%" }}
+                        />
+                        {cardAmount > 0 && (
+                          <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                            <CreditCard size={13} /> 카드 결제: <strong style={{ color: "var(--text-primary)", marginLeft: 4 }}>{cardAmount.toLocaleString()}원</strong>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
