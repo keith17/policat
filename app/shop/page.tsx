@@ -26,6 +26,7 @@ export default function ShopPage() {
   const [isVerified, setIsVerified]   = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [contactInfo, setContactInfo] = useState("");
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [toast, setToast]             = useState<{ msg: string; type: "success" | "warn" } | null>(null);
 
   const supabase = createClient();
@@ -66,66 +67,14 @@ export default function ShopPage() {
 
   const cardAmount = buyModal ? buyModal.price - pointsToUse : 0;
 
-  const ensureVerified = async (): Promise<boolean> => {
-    if (isVerified) return true;
-    if (!window.confirm("상품 구매를 위해 최초 1회 휴대폰 본인인증이 필요합니다. 진행하시겠습니까?")) return false;
-    try {
-      const PortOne = await import("@portone/browser-sdk/v2");
-      const storeId    = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
-      const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
-      if (!storeId || !channelKey) {
-        showToast("포트원 설정이 누락되었습니다. 관리자에게 문의하세요.", "warn");
-        return false;
-      }
-      const res = await PortOne.requestIdentityVerification({
-        storeId,
-        identityVerificationId: `cert-${crypto.randomUUID()}`,
-        channelKey,
-      });
-      if (!res || res.code != null) {
-        showToast(res?.message ?? "인증이 취소되었습니다.", "warn");
-        return false;
-      }
-      const verifyRes = await fetch("/api/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identityVerificationId: res.identityVerificationId, userId: user.id }),
-      });
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok || !verifyData.success) {
-        showToast(`인증 처리 오류: ${verifyData.message}`, "warn");
-        return false;
-      }
-      setIsVerified(true);
-      showToast("본인인증 완료", "success");
-      return true;
-    } catch {
-      showToast("인증 중 오류가 발생했습니다.", "warn");
-      return false;
-    }
-  };
-
-  const handlePay = async () => {
+  const executePayment = async () => {
     if (!buyModal) return;
-    if (!user) {
-      showToast("구매하려면 로그인이 필요합니다.", "warn");
-      setBuyModal(null);
-      return;
-    }
-    if (!contactInfo.trim()) { showToast("수신 연락처를 입력해주세요.", "warn"); return; }
-    if (xp < 500) { showToast("분석가 등급(XP 500) 이상부터 교환 가능합니다.", "warn"); return; }
-    if (cardAmount > 0 && cardAmount < 100) { showToast("카드 최소 결제 금액은 100원입니다. 포인트 사용량을 조절해주세요.", "warn"); return; }
-
     setIsProcessing(true);
-    const verified = await ensureVerified();
-    if (!verified) { setIsProcessing(false); return; }
 
     let paymentId: string | undefined;
-
-    // 카드 결제 필요 시 PortOne 실행
     if (cardAmount > 0) {
       try {
-        const PortOne  = await import("@portone/browser-sdk/v2");
+        const PortOne    = await import("@portone/browser-sdk/v2");
         const storeId    = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
         const channelKey = process.env.NEXT_PUBLIC_PORTONE_PAYMENT_CHANNEL_KEY;
         if (!storeId || !channelKey) {
@@ -135,9 +84,7 @@ export default function ShopPage() {
         }
         const pid = `order-${crypto.randomUUID()}`;
         const res = await PortOne.requestPayment({
-          storeId,
-          channelKey,
-          paymentId: pid,
+          storeId, channelKey, paymentId: pid,
           orderName: pointsToUse > 0
             ? `${buyModal.name} (포인트 ${pointsToUse.toLocaleString()}P + 카드)`
             : buyModal.name,
@@ -145,7 +92,6 @@ export default function ShopPage() {
           currency: "CURRENCY_KRW",
           payMethod: "CARD",
         } as any);
-
         if (!res || res.code != null) {
           showToast(res?.message ?? "결제가 취소되었습니다.", "warn");
           setIsProcessing(false);
@@ -160,18 +106,10 @@ export default function ShopPage() {
       }
     }
 
-    // 서버 검증 & 주문 기록 (포인트 차감 포함)
     const verifyRes = await fetch("/api/shop-payment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        paymentId,
-        itemId: buyModal.id,
-        itemName: buyModal.name,
-        price: buyModal.price,
-        contactInfo,
-        pointsUsed: pointsToUse,
-      }),
+      body: JSON.stringify({ paymentId, itemId: buyModal.id, itemName: buyModal.name, price: buyModal.price, contactInfo, pointsUsed: pointsToUse }),
     });
     const verifyData = await verifyRes.json();
     if (!verifyRes.ok) {
@@ -179,18 +117,30 @@ export default function ShopPage() {
       setIsProcessing(false);
       return;
     }
-
-    // 포인트 UI 업데이트
     if (verifyData.points !== undefined) setPoints(verifyData.points);
-
-    if (user.email) sendShopOrderEmail(user.email, buyModal.name).catch(console.error);
+    if (user?.email) sendShopOrderEmail(user.email, buyModal.name).catch(console.error);
     setBuyModal(null);
     setIsProcessing(false);
-
     const payLabel = cardAmount > 0
       ? pointsToUse > 0 ? `${pointsToUse.toLocaleString()}P + ₩${cardAmount.toLocaleString()} 복합결제 완료!` : `₩${cardAmount.toLocaleString()} 카드 결제 완료!`
       : `${pointsToUse.toLocaleString()}P 결제 완료!`;
     showToast(`✅ ${payLabel}`, "success");
+  };
+
+  const handlePay = async () => {
+    if (!buyModal) return;
+    if (!user) { showToast("구매하려면 로그인이 필요합니다.", "warn"); setBuyModal(null); return; }
+    if (!contactInfo.trim()) { showToast("수신 연락처를 입력해주세요.", "warn"); return; }
+    if (xp < 500) { showToast("분석가 등급(XP 500) 이상부터 교환 가능합니다.", "warn"); return; }
+    if (cardAmount > 0 && cardAmount < 100) { showToast("카드 최소 결제 금액은 100원입니다. 포인트 사용량을 조절해주세요.", "warn"); return; }
+    if (!isVerified) { setShowVerifyModal(true); return; }
+    await executePayment();
+  };
+
+  const handleVerifyConfirm = async () => {
+    setIsVerified(true);
+    setShowVerifyModal(false);
+    await executePayment();
   };
 
   return (
@@ -441,7 +391,7 @@ export default function ShopPage() {
                       type="text"
                       value={contactInfo}
                       onChange={e => setContactInfo(e.target.value)}
-                      placeholder="예: 010-1234-5678 또는 이메일"
+                      placeholder="예: 010-1234-5678"
                       style={{ width: "100%", padding: "11px 14px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 14, background: "var(--bg-secondary)", color: "var(--text-primary)", outline: "none", boxSizing: "border-box" }}
                     />
                   </div>
@@ -474,6 +424,48 @@ export default function ShopPage() {
                       }
                     </motion.button>
                   </div>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* 본인인증 안내 팝업 */}
+      <AnimatePresence>
+        {showVerifyModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowVerifyModal(false)}
+              style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+            />
+            <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 301, width: "calc(100% - 40px)", maxWidth: 400 }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 20, padding: "32px 28px", boxShadow: "0 24px 48px rgba(0,0,0,0.3)" }}
+              >
+                <div style={{ textAlign: "center", marginBottom: 24 }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>🛡️</div>
+                  <h3 style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)", marginBottom: 8 }}>본인인증 안내</h3>
+                  <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>
+                    상품 구매를 위해 최초 1회 본인인증이 필요합니다.<br />
+                    어뷰징 방지 및 안전한 기프티콘 발송을 위해 운영됩니다.
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    onClick={() => setShowVerifyModal(false)}
+                    style={{ flex: 1, padding: "13px", borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleVerifyConfirm}
+                    style={{ flex: 2, padding: "13px", borderRadius: 10, border: "none", background: "var(--purple-primary)", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+                  >
+                    확인하고 구매하기
+                  </button>
                 </div>
               </motion.div>
             </div>

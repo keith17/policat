@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
 import { formatPoints } from "@/lib/data";
 import { sendShopOrderEmail } from "@/app/actions/email";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Coffee, Gift, Tag, Truck, Zap, ExternalLink, ShoppingBag, CreditCard, Coins } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -31,6 +31,7 @@ export default function ShopItemPage() {
   const [isVerified, setIsVerified]     = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [contactInfo, setContactInfo]   = useState("");
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [toast, setToast]               = useState<{ msg: string; type: "success" | "warn" } | null>(null);
 
   const supabase = createClient();
@@ -73,53 +74,24 @@ export default function ShopItemPage() {
 
   const cardAmount = item ? item.price - pointsToUse : 0;
 
-  const ensureVerified = async (): Promise<boolean> => {
-    if (isVerified) return true;
-    if (!window.confirm("상품 구매를 위해 최초 1회 휴대폰 본인인증이 필요합니다. 진행하시겠습니까?")) return false;
-    try {
-      const PortOne = await import("@portone/browser-sdk/v2");
-      const storeId    = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
-      const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
-      if (!storeId || !channelKey) { showToast("포트원 설정이 누락되었습니다.", "warn"); return false; }
-      const res = await (PortOne as any).requestIdentityVerification({
-        storeId, channelKey,
-        identityVerificationId: `iv-${Date.now()}`,
-        customer: { fullName: "", phoneNumber: "" },
-      } as any);
-      if (res.code) { showToast("본인인증에 실패했습니다.", "warn"); return false; }
-      await supabase.from("profiles").update({ is_verified: true }).eq("id", user.id);
-      setIsVerified(true);
-      return true;
-    } catch { showToast("본인인증 중 오류가 발생했습니다.", "warn"); return false; }
-  };
-
-  const handlePay = async () => {
-    if (!user) { showToast("구매하려면 로그인이 필요합니다.", "warn"); return; }
-    if (!contactInfo.trim()) { showToast("연락처 또는 이메일을 입력해주세요.", "warn"); return; }
-    const verified = await ensureVerified();
-    if (!verified) return;
-
+  const executePayment = async () => {
+    if (!item) return;
     setIsProcessing(true);
     try {
       let paymentId: string | undefined;
       if (cardAmount > 0) {
-        const PortOne = await import("@portone/browser-sdk/v2");
+        const PortOne    = await import("@portone/browser-sdk/v2");
         const storeId    = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
         const channelKey = process.env.NEXT_PUBLIC_PORTONE_PAYMENT_CHANNEL_KEY;
         if (!storeId || !channelKey) { showToast("결제 설정이 누락되었습니다.", "warn"); setIsProcessing(false); return; }
         const pid = `order-${Date.now()}`;
         const payRes = await (PortOne as any).requestPayment({
-          storeId, channelKey,
-          paymentId: pid,
-          orderName: item.name,
-          totalAmount: cardAmount,
-          currency: "KRW",
-          payMethod: "CARD",
+          storeId, channelKey, paymentId: pid,
+          orderName: item.name, totalAmount: cardAmount, currency: "KRW", payMethod: "CARD",
         } as any);
         if (payRes?.code) { showToast(`카드 결제 실패: ${payRes.message || ""}`, "warn"); setIsProcessing(false); return; }
         paymentId = pid;
       }
-
       const res = await fetch("/api/shop-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,6 +104,19 @@ export default function ShopItemPage() {
       showToast(`🎉 구매 완료! 기프티콘이 연락처로 발송됩니다.`);
     } catch { showToast("결제 중 오류가 발생했습니다.", "warn"); }
     setIsProcessing(false);
+  };
+
+  const handlePay = async () => {
+    if (!user) { showToast("구매하려면 로그인이 필요합니다.", "warn"); return; }
+    if (!contactInfo.trim()) { showToast("수신 전화번호 또는 이메일을 입력해주세요.", "warn"); return; }
+    if (!isVerified) { setShowVerifyModal(true); return; }
+    await executePayment();
+  };
+
+  const handleVerifyConfirm = async () => {
+    setIsVerified(true);
+    setShowVerifyModal(false);
+    await executePayment();
   };
 
   if (loading) return <div className="animated-bg" style={{ minHeight: "100vh" }} />;
@@ -229,7 +214,7 @@ export default function ShopItemPage() {
                       type="text"
                       value={contactInfo}
                       onChange={e => setContactInfo(e.target.value)}
-                      placeholder="이메일 또는 휴대폰 번호"
+                      placeholder="예: 010-1234-5678"
                       style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box" }}
                     />
                   </div>
@@ -269,6 +254,48 @@ export default function ShopItemPage() {
           </div>
         )}
       </main>
+
+      {/* 본인인증 안내 팝업 */}
+      <AnimatePresence>
+        {showVerifyModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowVerifyModal(false)}
+              style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+            />
+            <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 301, width: "calc(100% - 40px)", maxWidth: 400 }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 20, padding: "32px 28px", boxShadow: "0 24px 48px rgba(0,0,0,0.3)" }}
+              >
+                <div style={{ textAlign: "center", marginBottom: 24 }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>🛡️</div>
+                  <h3 style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)", marginBottom: 8 }}>본인인증 안내</h3>
+                  <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>
+                    상품 구매를 위해 최초 1회 본인인증이 필요합니다.<br />
+                    어뷰징 방지 및 안전한 기프티콘 발송을 위해 운영됩니다.
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    onClick={() => setShowVerifyModal(false)}
+                    style={{ flex: 1, padding: "13px", borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleVerifyConfirm}
+                    style={{ flex: 2, padding: "13px", borderRadius: 10, border: "none", background: "var(--purple-primary)", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+                  >
+                    확인하고 구매하기
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Toast */}
       {toast && (
