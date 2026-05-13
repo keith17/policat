@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const [points, setPoints] = useState(0);
   const [xp, setXp] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [shopOrders, setShopOrders]     = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Ad Reward State
@@ -33,6 +34,9 @@ export default function ProfilePage() {
           setXp(profile.xp !== undefined ? profile.xp : profile.points); // fallback if SQL not run yet
         }
         
+        const { data: orders } = await supabase.from("shop_orders").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+        if (orders) setShopOrders(orders);
+
         const { data: txs } = await supabase.from("point_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
         if (txs) {
           setTransactions(txs);
@@ -169,6 +173,43 @@ export default function ProfilePage() {
             </button>
           </a>
         </section>
+
+        {/* 구매 내역 */}
+        <h2 id="orders" style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 16 }}>구매 내역</h2>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 32 }}>
+          {shopOrders.length === 0 ? (
+            <div style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 15 }}>
+              아직 구매 내역이 없습니다.
+            </div>
+          ) : (
+            shopOrders.map((order, idx) => {
+              const statusLabel = order.status === "completed" ? "발송 완료" : order.status === "canceled" ? "취소됨" : "발송 준비 중";
+              const statusColor = order.status === "completed" ? "#22c55e" : order.status === "canceled" ? "var(--accent-no)" : "#eab308";
+              return (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: idx === shopOrders.length - 1 ? "none" : "1px solid var(--border)" }}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{order.item_name}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                      수신: {order.contact_info} · {new Date(order.created_at).toLocaleDateString("ko-KR")}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
+                      {order.price.toLocaleString()}P
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: statusColor }}>
+                      {statusLabel}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
+        </div>
 
         {/* Transactions Table */}
         <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 16 }}>포인트 내역</h2>

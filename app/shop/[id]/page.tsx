@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
 import { formatPoints } from "@/lib/data";
 import { sendShopOrderEmail } from "@/app/actions/email";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Coffee, Gift, Tag, Truck, Zap, ExternalLink, ShoppingBag, CreditCard, Coins } from "lucide-react";
+import { ArrowLeft, Coffee, Gift, Tag, Truck, Zap, ExternalLink, CreditCard, Coins, CheckCircle } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   coffee: <Coffee size={56} color="var(--purple-primary)" />,
@@ -32,6 +33,7 @@ export default function ShopItemPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [contactInfo, setContactInfo]   = useState("");
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [paySuccess, setPaySuccess]           = useState(false);
   const [toast, setToast]               = useState<{ msg: string; type: "success" | "warn" } | null>(null);
 
   const supabase = createClient();
@@ -66,8 +68,16 @@ export default function ShopItemPage() {
   const MIN_POINTS_TO_USE = 1000;
 
   useEffect(() => {
-    if (item && user) setPointsToUse(points >= MIN_POINTS_TO_USE ? Math.min(points, item.price) : 0);
+    if (item && user) {
+      const maxUsable = Math.floor(Math.min(points, item.price) / 100) * 100;
+      setPointsToUse(maxUsable >= MIN_POINTS_TO_USE ? maxUsable : 0);
+    }
   }, [item, user, points]);
+
+  const handleSliderChange = (val: number) => {
+    if (val > 0 && val < MIN_POINTS_TO_USE) setPointsToUse(MIN_POINTS_TO_USE);
+    else setPointsToUse(val);
+  };
 
   const showToast = (msg: string, type: "success" | "warn" = "success") => {
     setToast({ msg, type });
@@ -103,7 +113,7 @@ export default function ShopItemPage() {
       if (!res.ok) { showToast(data.error || "결제 실패", "warn"); setIsProcessing(false); return; }
       if (data.points !== undefined) setPoints(data.points);
       if (user?.email) sendShopOrderEmail(user.email, item.name).catch(console.error);
-      showToast(`🎉 구매 완료! 기프티콘이 연락처로 발송됩니다.`);
+      setPaySuccess(true);
     } catch { showToast("결제 중 오류가 발생했습니다.", "warn"); }
     setIsProcessing(false);
   };
@@ -187,60 +197,87 @@ export default function ShopItemPage() {
 
               {user ? (
                 <>
-                  {/* Points slider */}
-                  <div style={{ marginBottom: 20, opacity: points < MIN_POINTS_TO_USE ? 0.5 : 1 }}>
-                    <label style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
-                      <span><Coins size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />포인트 사용</span>
-                      <span style={{ fontWeight: 700, color: "var(--accent)" }}>{pointsToUse.toLocaleString()}P (보유: {formatPoints(points)})</span>
-                    </label>
-                    {points < MIN_POINTS_TO_USE ? (
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "6px 0" }}>
-                        포인트 사용은 최소 {MIN_POINTS_TO_USE.toLocaleString()}P 이상 보유 시 가능합니다. (현재 {points.toLocaleString()}P)
+                  {paySuccess ? (
+                    <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
+                      <CheckCircle size={52} color="#22c55e" style={{ marginBottom: 12 }} />
+                      <h3 style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)", marginBottom: 8 }}>구매 완료!</h3>
+                      <div style={{ fontSize: 13, color: "var(--text-muted)", background: "var(--surface-alt)", borderRadius: 10, padding: "14px 16px", marginBottom: 20, lineHeight: 1.8 }}>
+                        📦 기프티콘은 입력하신 전화번호로 발송되며,<br />
+                        평일 기준 <strong style={{ color: "var(--text-secondary)" }}>최대 1~2일 소요</strong>될 수 있습니다.
                       </div>
-                    ) : (
-                      <>
-                        <input
-                          type="range"
-                          min={0}
-                          max={Math.min(points, item.price)}
-                          step={100}
-                          value={pointsToUse}
-                          onChange={e => setPointsToUse(Number(e.target.value))}
-                          style={{ width: "100%" }}
-                        />
-                        {cardAmount > 0 && (
-                          <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
-                            <CreditCard size={13} /> 카드 결제: <strong style={{ color: "var(--text-primary)", marginLeft: 4 }}>{cardAmount.toLocaleString()}원</strong>
+                      <button
+                        onClick={() => router.push("/profile/me")}
+                        style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: "var(--purple-primary)", color: "white", fontSize: 15, fontWeight: 800, cursor: "pointer" }}
+                      >
+                        구매 내역 보기
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Points slider */}
+                      {(() => {
+                        const maxUsable = Math.floor(Math.min(points, item.price) / 100) * 100;
+                        const canUse = maxUsable >= MIN_POINTS_TO_USE;
+                        return (
+                          <div style={{ marginBottom: 20 }}>
+                            <label style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+                              <span><Coins size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />포인트 사용</span>
+                              <span style={{ fontWeight: 700, color: canUse ? "var(--accent)" : "var(--text-muted)" }}>{pointsToUse.toLocaleString()}P (보유: {formatPoints(points)})</span>
+                            </label>
+                            {!canUse ? (
+                              <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "4px 0" }}>
+                                포인트 사용은 최소 1,000P 이상 보유 시 가능합니다.
+                              </div>
+                            ) : (
+                              <>
+                                <input
+                                  type="range"
+                                  min={0}
+                                  max={maxUsable}
+                                  step={100}
+                                  value={pointsToUse}
+                                  onChange={e => handleSliderChange(Number(e.target.value))}
+                                  style={{ width: "100%" }}
+                                />
+                                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                                  최소 1,000P 이상 사용 · 0P 선택 시 카드 전액 결제
+                                </div>
+                                {cardAmount > 0 && (
+                                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                                    <CreditCard size={13} /> 카드 결제: <strong style={{ color: "var(--text-primary)", marginLeft: 4 }}>{cardAmount.toLocaleString()}원</strong>
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
-                        )}
-                      </>
-                    )}
-                  </div>
+                        );
+                      })()}
 
-                  {/* Contact info */}
-                  <div style={{ marginBottom: 20 }}>
-                    <label style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8, display: "block" }}>기프티콘 받을 이메일/연락처</label>
-                    <input
-                      type="text"
-                      value={contactInfo}
-                      onChange={e => setContactInfo(e.target.value)}
-                      placeholder="예: 010-1234-5678"
-                      style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box" }}
-                    />
-                  </div>
+                      {/* Contact info */}
+                      <div style={{ marginBottom: 20 }}>
+                        <label style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8, display: "block" }}>기프티콘 수신 전화번호</label>
+                        <input
+                          type="tel"
+                          value={contactInfo}
+                          onChange={e => setContactInfo(e.target.value)}
+                          placeholder="예: 010-1234-5678"
+                          style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box" }}
+                        />
+                      </div>
 
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handlePay}
-                    disabled={isProcessing}
-                    style={{ width: "100%", padding: "16px", borderRadius: 12, border: "none", background: isProcessing ? "var(--surface-alt)" : "var(--accent)", color: isProcessing ? "var(--text-muted)" : "white", fontSize: 16, fontWeight: 800, cursor: isProcessing ? "not-allowed" : "pointer" }}
-                  >
-                    {isProcessing ? "처리 중…" : cardAmount > 0 ? `카드 ${cardAmount.toLocaleString()}원 + 포인트 ${pointsToUse.toLocaleString()}P 결제` : `포인트 ${pointsToUse.toLocaleString()}P로 구매`}
-                  </motion.button>
-
-                  <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 12 }}>
-                    최초 1회 휴대폰 본인인증 후 구매 가능 · 기프티콘은 평일 1~2일 내 발송
-                  </p>
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handlePay}
+                        disabled={isProcessing}
+                        style={{ width: "100%", padding: "16px", borderRadius: 12, border: "none", background: isProcessing ? "var(--surface-alt)" : "var(--accent)", color: isProcessing ? "var(--text-muted)" : "white", fontSize: 16, fontWeight: 800, cursor: isProcessing ? "not-allowed" : "pointer" }}
+                      >
+                        {isProcessing ? "처리 중…" : cardAmount > 0 ? `카드 ${cardAmount.toLocaleString()}원 + 포인트 ${pointsToUse.toLocaleString()}P 결제` : `포인트 ${pointsToUse.toLocaleString()}P로 구매`}
+                      </motion.button>
+                      <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 12 }}>
+                        최초 1회 본인인증 후 구매 가능 · 기프티콘은 전화번호로 발송
+                      </p>
+                    </>
+                  )}
                 </>
               ) : (
                 <div style={{ textAlign: "center" }}>

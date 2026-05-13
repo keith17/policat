@@ -33,3 +33,38 @@
   color: var(--accent-gold);
   font-weight: var(--fw-semi);
 }
+
+/* range slider — thumb reaches both ends */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--border);
+  height: 4px;
+  border-radius: 2px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: -8px;
+  box-shadow: 0 0 0 2px var(--bg-card);
+}
+input[type="range"]::-moz-range-track {
+  background: var(--border);
+  height: 4px;
+  border-radius: 2px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg-card);
+}

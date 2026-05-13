@@ -5,7 +5,8 @@ import { createClient } from "@/utils/supabase/client";
 import { formatPoints } from "@/lib/data";
 import { sendShopOrderEmail } from "@/app/actions/email";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Coffee, Gift, Tag, Truck, Coins, CreditCard, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ShoppingBag, Coffee, Gift, Tag, Truck, Coins, CreditCard, Zap, CheckCircle } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   coffee: <Coffee size={40} color="var(--purple-primary)" />,
@@ -16,6 +17,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 };
 
 export default function ShopPage() {
+  const router = useRouter();
   const [user, setUser]               = useState<any>(null);
   const [points, setPoints]           = useState(0);
   const [xp, setXp]                   = useState(0);
@@ -27,6 +29,7 @@ export default function ShopPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [contactInfo, setContactInfo] = useState("");
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [paySuccess, setPaySuccess]   = useState<{ itemName: string; pointsUsed: number; cardAmount: number } | null>(null);
   const [toast, setToast]             = useState<{ msg: string; type: "success" | "warn" } | null>(null);
 
   const supabase = createClient();
@@ -64,7 +67,13 @@ export default function ShopPage() {
 
   const openModal = (item: any) => {
     setBuyModal(item);
-    setPointsToUse(user && points >= MIN_POINTS_TO_USE ? Math.min(points, item.price) : 0);
+    const maxUsable = Math.floor(Math.min(points, item.price) / 100) * 100;
+    setPointsToUse(user && maxUsable >= MIN_POINTS_TO_USE ? maxUsable : 0);
+  };
+
+  const handleSliderChange = (val: number) => {
+    if (val > 0 && val < MIN_POINTS_TO_USE) setPointsToUse(MIN_POINTS_TO_USE);
+    else setPointsToUse(val);
   };
 
   const cardAmount = buyModal ? buyModal.price - pointsToUse : 0;
@@ -121,12 +130,10 @@ export default function ShopPage() {
     }
     if (verifyData.points !== undefined) setPoints(verifyData.points);
     if (user?.email) sendShopOrderEmail(user.email, buyModal.name).catch(console.error);
+    const successData = { itemName: buyModal.name, pointsUsed: pointsToUse, cardAmount };
     setBuyModal(null);
     setIsProcessing(false);
-    const payLabel = cardAmount > 0
-      ? pointsToUse > 0 ? `${pointsToUse.toLocaleString()}P + ₩${cardAmount.toLocaleString()} 복합결제 완료!` : `₩${cardAmount.toLocaleString()} 카드 결제 완료!`
-      : `${pointsToUse.toLocaleString()}P 결제 완료!`;
-    showToast(`✅ ${payLabel}`, "success");
+    setPaySuccess(successData);
   };
 
   const handlePay = async () => {
@@ -309,55 +316,61 @@ export default function ShopPage() {
 
                 <div style={{ padding: "0 24px 24px" }}>
                   {/* 포인트 슬라이더 */}
-                  <div style={{ background: "var(--surface-alt)", borderRadius: 12, padding: 16, marginBottom: 16, opacity: points < MIN_POINTS_TO_USE ? 0.5 : 1 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-                        <Coins size={15} color="var(--accent)" /> 포인트 사용
-                      </span>
-                      <span style={{ fontSize: 14, fontWeight: 900, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>
-                        {pointsToUse.toLocaleString()}P
-                      </span>
-                    </div>
-
-                    {points < MIN_POINTS_TO_USE ? (
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "6px 0" }}>
-                        포인트 사용은 최소 {MIN_POINTS_TO_USE.toLocaleString()}P 이상 보유 시 가능합니다. (현재 {points.toLocaleString()}P)
-                      </div>
-                    ) : (
-                      <>
-                        <input
-                          type="range"
-                          min={0}
-                          max={Math.min(points, buyModal.price)}
-                          step={100}
-                          value={pointsToUse}
-                          onChange={e => setPointsToUse(Number(e.target.value))}
-                          style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }}
-                        />
-                        {/* 빠른 선택 */}
-                        <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-                          {[
-                            { label: "사용 안 함", val: 0 },
-                            { label: "절반", val: Math.floor(Math.min(points, buyModal.price) / 2 / 100) * 100 },
-                            { label: "전부 사용", val: Math.min(points, buyModal.price) },
-                          ].map(({ label, val }) => (
-                            <button
-                              key={label}
-                              onClick={() => setPointsToUse(val)}
-                              style={{
-                                padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                                border: pointsToUse === val ? "1px solid var(--accent)" : "1px solid var(--border)",
-                                background: pointsToUse === val ? "rgba(var(--accent-rgb),0.1)" : "transparent",
-                                color: pointsToUse === val ? "var(--accent)" : "var(--text-secondary)",
-                              }}
-                            >
-                              {label}
-                            </button>
-                          ))}
+                  {(() => {
+                    const maxUsable = Math.floor(Math.min(points, buyModal.price) / 100) * 100;
+                    const canUse = maxUsable >= MIN_POINTS_TO_USE;
+                    return (
+                      <div style={{ background: "var(--surface-alt)", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+                            <Coins size={15} color="var(--accent)" /> 포인트 사용
+                          </span>
+                          <span style={{ fontSize: 14, fontWeight: 900, color: canUse ? "var(--accent)" : "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                            {pointsToUse.toLocaleString()}P
+                          </span>
                         </div>
-                      </>
-                    )}
-                  </div>
+                        {!canUse ? (
+                          <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "4px 0" }}>
+                            포인트 사용은 최소 1,000P 이상 보유 시 가능합니다. (보유 {points.toLocaleString()}P)
+                          </div>
+                        ) : (
+                          <>
+                            <input
+                              type="range"
+                              min={0}
+                              max={maxUsable}
+                              step={100}
+                              value={pointsToUse}
+                              onChange={e => handleSliderChange(Number(e.target.value))}
+                            />
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                              최소 {MIN_POINTS_TO_USE.toLocaleString()}P 이상 사용 가능 · 0P 선택 시 카드 전액 결제
+                            </div>
+                            <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                              {[
+                                { label: "사용 안 함", val: 0 },
+                                { label: "절반", val: Math.max(MIN_POINTS_TO_USE, Math.floor(maxUsable / 2 / 100) * 100) },
+                                { label: "전부 사용", val: maxUsable },
+                              ].map(({ label, val }) => (
+                                <button
+                                  key={label}
+                                  onClick={() => setPointsToUse(val)}
+                                  style={{
+                                    padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                                    border: pointsToUse === val ? "1px solid var(--accent)" : "1px solid var(--border)",
+                                    background: pointsToUse === val ? "rgba(99,102,241,0.12)" : "transparent",
+                                    color: pointsToUse === val ? "var(--accent)" : "var(--text-secondary)",
+                                  }}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* 결제 요약 */}
                   <div style={{ background: "var(--bg-secondary)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 14 }}>
@@ -394,10 +407,10 @@ export default function ShopPage() {
                   {/* 연락처 */}
                   <div style={{ marginBottom: 20 }}>
                     <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
-                      기프티콘 수신 연락처 (전화번호 또는 이메일)
+                      기프티콘 수신 전화번호
                     </label>
                     <input
-                      type="text"
+                      type="tel"
                       value={contactInfo}
                       onChange={e => setContactInfo(e.target.value)}
                       placeholder="예: 010-1234-5678"
@@ -433,6 +446,53 @@ export default function ShopPage() {
                       }
                     </motion.button>
                   </div>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* 구매 완료 팝업 */}
+      <AnimatePresence>
+        {paySuccess && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+            />
+            <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 301, width: "calc(100% - 40px)", maxWidth: 400 }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 20, padding: "32px 28px", boxShadow: "0 24px 48px rgba(0,0,0,0.3)", textAlign: "center" }}
+              >
+                <CheckCircle size={52} color="#22c55e" style={{ marginBottom: 16 }} />
+                <h3 style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)", marginBottom: 8 }}>구매 완료!</h3>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 8 }}>
+                  <strong style={{ color: "var(--text-primary)" }}>{paySuccess.itemName}</strong>
+                  {paySuccess.cardAmount > 0
+                    ? paySuccess.pointsUsed > 0
+                      ? ` — ${paySuccess.pointsUsed.toLocaleString()}P + ₩${paySuccess.cardAmount.toLocaleString()} 결제 완료`
+                      : ` — ₩${paySuccess.cardAmount.toLocaleString()} 카드 결제 완료`
+                    : ` — ${paySuccess.pointsUsed.toLocaleString()}P 결제 완료`}
+                </p>
+                <div style={{ fontSize: 13, color: "var(--text-muted)", background: "var(--surface-alt)", borderRadius: 10, padding: "12px 16px", marginBottom: 24 }}>
+                  📦 기프티콘은 입력하신 전화번호로 발송되며,<br />
+                  평일 기준 <strong style={{ color: "var(--text-secondary)" }}>최대 1~2일 소요</strong>될 수 있습니다.
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    onClick={() => setPaySuccess(null)}
+                    style={{ flex: 1, padding: "13px", borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+                  >
+                    계속 쇼핑
+                  </button>
+                  <button
+                    onClick={() => { setPaySuccess(null); router.push("/profile/me"); }}
+                    style={{ flex: 2, padding: "13px", borderRadius: 10, border: "none", background: "var(--purple-primary)", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+                  >
+                    구매 내역 보기
+                  </button>
                 </div>
               </motion.div>
             </div>
