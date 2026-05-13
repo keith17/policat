@@ -1,61 +1,72 @@
 import Navbar from "@/components/Navbar";
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid var(--border)" }}>
+        {title}
+      </h2>
+      <div style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.8 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function TOSPage() {
   return (
-    <div className="animated-bg" style={{ minHeight: "100vh", paddingBottom: 80 }}>
-      {/* Assuming Navbar can handle default non-user states if we don't pass points/streak, or we pass 0 */}
-      <Navbar points={0} streak={0} />
-      
-      <main style={{ maxWidth: 800, margin: "0 auto", padding: "100px 20px 40px" }}>
-        <h1 style={{ fontSize: 32, fontWeight: 900, color: "var(--text-primary)", marginBottom: 40, borderBottom: "1px solid var(--border)", paddingBottom: 16 }}>
-          Policat 이용약관 (Terms of Service)
-        </h1>
+    <div style={{ minHeight: "100vh", background: "var(--bg-primary)", paddingBottom: 80 }}>
+      <Navbar points={0} xp={0} streak={0} />
+      <main style={{ maxWidth: 780, margin: "0 auto", padding: "100px 20px 40px" }}>
+        <div style={{ marginBottom: 40 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: "var(--text-primary)", marginBottom: 8 }}>서비스 이용약관</h1>
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>시행일: 2026년 5월 13일 · 트루러브웨이츠</p>
+        </div>
 
-        <section style={{ display: "flex", flexDirection: "column", gap: 24, padding: "32px", borderRadius: "12px", background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--purple-primary)", marginBottom: 12 }}>1. 목적 및 기본 원칙</h2>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, fontSize: 15 }}>
-              본 약관은 Policat(이하 "회사")이 제공하는 예측 마켓 서비스의 이용조건 및 절차를 규정합니다. Policat은 암호화폐나 실제 현금이 아닌 플랫폼 내 무료 '포인트'를 사용하여 대중의 지혜와 예측을 모으는 즐거운 엔터테인먼트 플랫폼입니다.
-            </p>
-          </div>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: "32px 36px" }}>
+          <Section title="제1조 (목적)">
+            본 약관은 폴리캣(이하 '회사')이 제공하는 예측 콘텐츠, 포인트 적립 및 보상 서비스(이하 '서비스')의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임 사항을 규정함을 목적으로 합니다.
+          </Section>
 
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--purple-primary)", marginBottom: 12 }}>2. 시장 생성 및 참여 (Market Generation & Trading)</h2>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, fontSize: 15 }}>
-              이용자는 누구나 흥미로운 이슈를 기반으로 마켓을 생성(제안)할 수 있습니다. 단, 마켓 제안 시 다음 규칙을 엄격히 따릅니다 (Polymarket 규칙 준용):
-              <br/><br/>
-              - <strong>명확성(Unambiguity):</strong> 예측 가능한 명확한 종료 날짜와 객관적 판정 기준을 제공해야 합니다.<br/>
-              - <strong>공정성(No Insider Trading):</strong> 답변을 임의로 조작할 수 있는 개인적인 사안, 미리 결과를 알고 있는 내부자 정보 기반의 제안은 엄격히 금지됩니다.<br/>
-              - <strong>준법성:</strong> 범죄, 폭력 조장, 불법적 요소를 포함하는 마켓은 생성할 수 없습니다.
-            </p>
-          </div>
+          <Section title="제2조 (용어의 정의)">
+            <ol style={{ paddingLeft: 20, margin: 0 }}>
+              <li style={{ marginBottom: 6 }}>'포인트'란 회원이 서비스 내 예측 참여, 광고 시청, 이벤트 참여 등을 통해 무상으로 적립 받고, 상품권 교환 등에 사용할 수 있는 가상의 데이터를 말합니다.</li>
+              <li>'보상'이란 회원이 보유한 포인트를 소진하여 획득할 수 있는 네이버페이, 배달의민족, 카카오톡 상품권 등의 모바일 교환권을 말합니다.</li>
+            </ol>
+          </Section>
 
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--purple-primary)", marginBottom: 12 }}>3. 결과 판정 및 관리자 권한 (Resolution & Admin Authority)</h2>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, fontSize: 15 }}>
-              제안된 마켓의 최종 정답(결과) 입력은 생성자가 추천하더라도, 어뷰징(Abuse) 및 포인트 조작을 막기 위해 <strong>오직 '관리자(Admin)'만이 승인하고 마감(Resolution)</strong>할 수 있습니다. 관리자는 신뢰할 수 있는 퍼블릭 소스(뉴스, 공식 보도자료 등)를 바탕으로 최종 판정을 내리며, 해당 판정은 최종적이고 구속력을 가집니다.
-            </p>
-          </div>
+          <Section title="제3조 (회원가입 및 계정 정책)">
+            <ol style={{ paddingLeft: 20, margin: 0 }}>
+              <li style={{ marginBottom: 6 }}>회원가입은 구글(Google) 소셜 로그인 연동을 통해 이루어집니다.</li>
+              <li style={{ marginBottom: 6 }}>회사는 보상의 중복 수령 및 어뷰징 방지를 위해, <strong>보상 신청(상품 구매) 시점에 최초 1회의 휴대전화 본인인증</strong>을 요구합니다.</li>
+              <li>1인의 회원은 본인인증을 완료한 1개의 계정만으로 보상을 수령할 수 있으며, 타인의 명의를 도용하거나 다중 계정을 생성하는 경우 서비스 이용이 제한될 수 있습니다.</li>
+            </ol>
+          </Section>
 
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--purple-primary)", marginBottom: 12 }}>4. 포인트 가치 및 보상 (Points & Rewards)</h2>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, fontSize: 15 }}>
-              플랫폼 내 예측과 거래에 사용되는 <strong>포인트(Points)는 실제 현금이나 법정화폐로서의 가치를 지니지 않습니다.</strong> 어떠한 경우에도 포인트는 현금으로 환불되거나 교환될 수 없습니다.<br/>
-              단, 정해진 예측 티어와 랭킹에 도달한 우수 활동자에게는 회사의 정책에 따라 리워드(음료 기프티콘 등 실물 경품 쿠폰)가 무상으로 차등 지급될 수 있습니다.
-            </p>
-          </div>
+          <Section title="제4조 (포인트의 적립 및 유효기간)">
+            <ol style={{ paddingLeft: 20, margin: 0 }}>
+              <li style={{ marginBottom: 6 }}>회원은 서비스 내 콘텐츠 참여 및 광고 시청 등을 통해 포인트를 무상으로 적립할 수 있습니다.</li>
+              <li style={{ marginBottom: 6 }}><strong>포인트의 유효기간은 적립일로부터 6개월</strong>이며, 유효기간이 경과한 포인트는 순차적으로 자동 소멸됩니다.</li>
+              <li>회원이 최종 접속일로부터 <strong>180일</strong>간 로그인 기록이 없는 경우 휴면 계정으로 전환되며, 보유 중인 모든 포인트는 자동 소멸됩니다.</li>
+            </ol>
+          </Section>
 
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--purple-primary)", marginBottom: 12 }}>5. 면책 조항 (Disclaimers)</h2>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, fontSize: 15 }}>
-              회사는 예측 마켓 플랫폼의 장을 제공할 뿐, 예측 결과의 사실성 или 이용자 간의 분쟁에 대해 법적 책임을 지지 않습니다. 이용자는 자신의 판단 하에 서비스에 참여하며, 포인트 결과 변동에 따른 책임을 전적으로 부담합니다.
-            </p>
-          </div>
-          
-          <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)", fontSize: 14, color: "var(--text-muted)" }}>
-            * 본 약관은 세계 최대 예측 시장 플랫폼인 Polymarket의 운용 철학과 투명성 원칙(Transparency & Resolution)을 준용하여 작성되었습니다.
-          </div>
-        </section>
+          <Section title="제5조 (포인트 사용 및 보상 지급)">
+            <ol style={{ paddingLeft: 20, margin: 0 }}>
+              <li style={{ marginBottom: 6 }}>회원은 누적된 포인트를 사용하여 상점에서 상품을 구매할 수 있습니다.</li>
+              <li style={{ marginBottom: 6 }}>상품권은 본인인증된 휴대폰 번호로 발송되며, 번호 오기재로 인한 책임은 회원에게 있습니다.</li>
+              <li style={{ marginBottom: 6 }}><strong>포인트는 현금으로 환전할 수 없으며, 제3자에게 양도하거나 유료로 구매할 수 없습니다.</strong></li>
+              <li>부정한 방법으로 포인트를 획득한 경우 회사는 즉각 포인트 몰수 및 계정 정지 조치를 취할 수 있습니다.</li>
+            </ol>
+          </Section>
+
+          <Section title="제6조 (콘텐츠의 성격 및 책임 제한)">
+            <ol style={{ paddingLeft: 20, margin: 0 }}>
+              <li style={{ marginBottom: 6 }}>서비스 내 예측 콘텐츠는 정보 제공 및 재미를 위한 것이며, 실제 결과에 대한 보증이나 금융·투자 조언이 아닙니다.</li>
+              <li>회원은 예측 결과를 기반으로 사적인 금전 거래나 불법 도박 행위를 할 수 없습니다.</li>
+            </ol>
+          </Section>
+        </div>
       </main>
     </div>
   );

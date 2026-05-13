@@ -1,56 +1,102 @@
 import Navbar from "@/components/Navbar";
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid var(--border)" }}>
+        {title}
+      </h2>
+      <div style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.8 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function PrivacyPage() {
   return (
-    <div className="animated-bg" style={{ minHeight: "100vh", paddingBottom: 80 }}>
-      <Navbar points={0} streak={0} />
-      
-      <main style={{ maxWidth: 800, margin: "0 auto", padding: "100px 20px 40px" }}>
-        <h1 style={{ fontSize: 32, fontWeight: 900, color: "var(--text-primary)", marginBottom: 40, borderBottom: "1px solid var(--border)", paddingBottom: 16 }}>
-          개인정보 처리방침 (Privacy Policy)
-        </h1>
+    <div style={{ minHeight: "100vh", background: "var(--bg-primary)", paddingBottom: 80 }}>
+      <Navbar points={0} xp={0} streak={0} />
+      <main style={{ maxWidth: 780, margin: "0 auto", padding: "100px 20px 40px" }}>
+        <div style={{ marginBottom: 40 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: "var(--text-primary)", marginBottom: 8 }}>개인정보 처리방침</h1>
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>시행일: 2026년 5월 13일 · 트루러브웨이츠</p>
+        </div>
 
-        <section style={{ display: "flex", flexDirection: "column", gap: 24, padding: "32px", borderRadius: "12px", background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--purple-primary)", marginBottom: 12 }}>1. 개인정보 수집 항목</h2>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, fontSize: 15 }}>
-              Policat은 회원가입, 고객상담, 서비스 제공을 위해 최소한의 개인정보를 수집합니다.<br/>
-              - <strong>필수항목:</strong> 이메일 주소, 닉네임 (Google OAuth 제공 정보)<br/>
-              - <strong>수집방법:</strong> 소셜 로그인(Google)을 통한 자동 수집
-            </p>
-          </div>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: "32px 36px" }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.8, marginBottom: 28 }}>
+            폴리캣(이하 '회사')은 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 다음과 같이 개인정보 처리방침을 수립·공개합니다.
+          </p>
 
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--purple-primary)", marginBottom: 12 }}>2. 개인정보 수집 및 이용 목적</h2>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, fontSize: 15 }}>
-              수집한 개인정보는 다음의 목적을 위해 활용됩니다.<br/>
-              - 서비스 제공에 관한 계약 이행 및 서비스 제공에 따른 콘텐츠 제공<br/>
-              - 회원 관리: 회원제 서비스 이용에 따른 본인확인, 개인 식별, 불량회원의 부정 이용 방지와 비인가 사용 방지, 가입 의사 확인, 분쟁 조정을 위한 기록 보존, 불만처리 등 민원처리<br/>
-              - <strong>(마케팅 동의 시)</strong> 신규 서비스(제품) 개발 및 특화, 이벤트 등 광고성 정보 전달
-            </p>
-          </div>
+          <Section title="제1조 (개인정보의 처리 목적)">
+            <ol style={{ paddingLeft: 20, margin: 0 }}>
+              <li style={{ marginBottom: 6 }}><strong>홈페이지 회원 가입 및 관리:</strong> 회원 가입 의사 확인, 본인 식별·인증, 서비스 부정이용 방지, 각종 고지·통지</li>
+              <li style={{ marginBottom: 6 }}><strong>재화 또는 서비스 제공:</strong> 예측 콘텐츠 제공, 포인트 적립, 보상 신청 시 본인인증, 모바일 상품권(기프티콘) 발송</li>
+              <li><strong>마케팅 및 광고에의 활용 (동의한 회원에 한함):</strong> 신규 서비스 및 맞춤형 혜택(이벤트) 안내, 서비스 이용 통계 분석</li>
+            </ol>
+          </Section>
 
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--purple-primary)", marginBottom: 12 }}>3. 개인정보의 보유 및 이용기간</h2>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, fontSize: 15 }}>
-              원칙적으로, 개인정보 수집 및 이용 목적이 달성된 후에는 해당 정보를 지체 없이 파기합니다. 단, 다음의 정보에 대해서는 아래의 이유로 명시한 기간 동안 보존합니다.<br/>
-              - 보존 항목: 로그인 기록, 결제/포인트 거래기록<br/>
-              - 보존 근거: 통신비밀보호법, 전자상거래 등에서의 소비자보호에 관한 법률<br/>
-              - 보존 기간: 3개월 ~ 최대 5년
-            </p>
-          </div>
+          <Section title="제2조 (처리하는 개인정보의 항목)">
+            <ol style={{ paddingLeft: 20, margin: 0 }}>
+              <li style={{ marginBottom: 6 }}><strong>회원 가입 시 (구글 소셜 로그인):</strong> 구글 계정 이메일, 닉네임, 프로필 이미지</li>
+              <li style={{ marginBottom: 6 }}><strong>보상 신청 및 지급 시 (최초 1회 본인인증):</strong> 이름, 휴대전화 번호, 생년월일, 성별, 연계정보(CI), 중복가입확인정보(DI)</li>
+              <li><strong>자동 수집 정보:</strong> IP 주소, 쿠키, 서비스 이용 기록, 기기 식별자</li>
+            </ol>
+          </Section>
 
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--purple-primary)", marginBottom: 12 }}>4. 개인정보의 파기절차 및 방법</h2>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, fontSize: 15 }}>
-              이용자가 회원가입 등을 위해 입력한 정보는 목적이 달성된 후 별도의 DB로 옮겨져(종이의 경우 별도의 서류함) 내부 방침 및 기타 관련 법령에 의한 정보보호 사유에 따라 일정 기간 저장된 후 파기됩니다.
-            </p>
-          </div>
-          
-          <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)", fontSize: 14, color: "var(--text-muted)" }}>
-            * 본 개인정보 처리방침은 Policat 베타 서비스 기간 동안 적용되는 표준 방침입니다.
-          </div>
-        </section>
+          <Section title="제3조 (개인정보의 처리 및 보유 기간)">
+            <ol style={{ paddingLeft: 20, margin: 0 }}>
+              <li style={{ marginBottom: 6 }}><strong>홈페이지 회원 가입 및 관리:</strong> 회원 탈퇴 시까지 (단, 법령 위반 수사 진행 중인 경우 해당 수사 종료 시까지)</li>
+              <li style={{ marginBottom: 6 }}><strong>재화 또는 서비스 제공:</strong> 쿠폰 발송 완료 시까지
+                <ul style={{ paddingLeft: 20, marginTop: 6 }}>
+                  <li>대금결제 및 재화 공급 기록: 5년</li>
+                  <li>소비자 불만 또는 분쟁처리 기록: 3년</li>
+                </ul>
+              </li>
+            </ol>
+          </Section>
+
+          <Section title="제4조 (개인정보의 제3자 제공)">
+            회사는 원칙적으로 정보주체의 개인정보를 제1조에서 명시한 범위 내에서만 처리하며, 정보주체의 동의 또는 법률의 특별한 규정이 있는 경우에만 제3자에게 제공합니다. (현재 회사는 개인정보를 제3자에게 제공하지 않습니다.)
+          </Section>
+
+          <Section title="제5조 (개인정보 처리업무의 위탁)">
+            <ul style={{ paddingLeft: 20, margin: 0 }}>
+              <li style={{ marginBottom: 6 }}><strong>(주)포트원:</strong> 보상 신청 시 휴대전화 본인인증</li>
+              <li><strong>기프티쇼 비즈:</strong> 모바일 상품권(기프티콘) 발송 대행</li>
+            </ul>
+          </Section>
+
+          <Section title="제6조 (개인정보의 파기)">
+            개인정보 보유기간의 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때에는 지체 없이 파기합니다. 전자적 파일은 복구 불가능한 방법으로, 종이 문서는 분쇄 또는 소각하여 파기합니다.
+          </Section>
+
+          <Section title="제7조 (정보주체의 권리·의무)">
+            정보주체는 회사에 대해 언제든지 개인정보 열람·정정·삭제·처리정지 요구 등의 권리를 행사할 수 있습니다. 서비스 내 설정 메뉴 또는 이메일(tlw.seoul@gmail.com)을 통해 요청하실 수 있습니다.
+          </Section>
+
+          <Section title="제8조 (개인정보의 안전성 확보 조치)">
+            <ul style={{ paddingLeft: 20, margin: 0 }}>
+              <li style={{ marginBottom: 6 }}><strong>관리적 조치:</strong> 내부관리계획 수립·시행, 정기적 교육</li>
+              <li><strong>기술적 조치:</strong> 접근권한 관리, 접근통제시스템 설치, 고유식별정보 암호화, 보안프로그램 설치</li>
+            </ul>
+          </Section>
+
+          <Section title="제9조 (쿠키 운영)">
+            회사는 이용자에게 개별적인 맞춤서비스를 제공하기 위해 쿠키(cookie)를 사용합니다. 웹브라우저 설정을 통해 쿠키 저장을 거부할 수 있으나, 이 경우 맞춤형 서비스 이용에 어려움이 있을 수 있습니다.
+          </Section>
+
+          <Section title="제10조 (개인정보 보호책임자)">
+            <ul style={{ paddingLeft: 0, margin: 0, listStyle: "none" }}>
+              <li><strong>책임자:</strong> 박기석 (대표)</li>
+              <li><strong>연락처:</strong> tlw.seoul@gmail.com</li>
+            </ul>
+          </Section>
+
+          <Section title="제11조 (처리방침 변경)">
+            이 개인정보 처리방침은 시행일로부터 적용되며, 변경 시 시행 7일 전 공지사항을 통해 고지합니다.
+          </Section>
+        </div>
       </main>
     </div>
   );
