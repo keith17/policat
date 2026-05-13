@@ -51,14 +51,15 @@ async function generateDemoMagicLink(origin: string): Promise<string | null> {
     error = retry.error;
   }
 
-  if (error || !data?.properties?.action_link) return null;
+  if (error || !data?.properties?.hashed_token) return null;
 
   // Make sure profile has terms_agreed (in case user existed but flag was missing)
   if (data.user) {
     await admin.from("profiles").update({ terms_agreed: true }).eq("id", data.user.id);
   }
 
-  return data.properties.action_link;
+  // Bypass Supabase's own verify URL — redirect straight to our callback with the token_hash
+  return `${origin}/auth/callback?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=magiclink`;
 }
 
 interface Props {
