@@ -44,7 +44,7 @@ export default function ShopPage() {
           setPoints(profile.points);
           setXp(profile.xp ?? profile.points);
           setIsVerified(!!profile.is_verified);
-          setContactInfo(profile.email || user.email || "");
+          setContactInfo("");
         }
       }
       const { data: items } = await supabase
@@ -136,10 +136,13 @@ export default function ShopPage() {
     setPaySuccess(successData);
   };
 
+  const isValidPhone = (v: string) => /^01[016789][- ]?\d{3,4}[- ]?\d{4}$/.test(v.replace(/\s/g, ""));
+
   const handlePay = async () => {
     if (!buyModal) return;
     if (pointsToUse > 0 && !user) { showToast("포인트 사용 시 로그인이 필요합니다.", "warn"); return; }
     if (!contactInfo.trim()) { showToast("수신 전화번호를 입력해주세요.", "warn"); return; }
+    if (!isValidPhone(contactInfo)) { showToast("올바른 휴대폰 번호를 입력해주세요. (예: 010-1234-5678)", "warn"); return; }
     if (user && xp < 500) { showToast("분석가 등급(XP 500) 이상부터 포인트 교환 가능합니다.", "warn"); return; }
     if (cardAmount > 0 && cardAmount < 100) { showToast("카드 최소 결제 금액은 100원입니다.", "warn"); return; }
     if (user && !isVerified) { setShowVerifyModal(true); return; }
@@ -416,18 +419,29 @@ export default function ShopPage() {
                   </div>
 
                   {/* 연락처 */}
-                  <div style={{ marginBottom: 20 }}>
-                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
-                      기프티콘 수신 전화번호
-                    </label>
-                    <input
-                      type="tel"
-                      value={contactInfo}
-                      onChange={e => setContactInfo(e.target.value)}
-                      placeholder="예: 010-1234-5678"
-                      style={{ width: "100%", padding: "11px 14px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 14, background: "var(--bg-secondary)", color: "var(--text-primary)", outline: "none", boxSizing: "border-box" }}
-                    />
-                  </div>
+                  {(() => {
+                    const filled = contactInfo.trim().length > 0;
+                    const valid  = isValidPhone(contactInfo);
+                    return (
+                      <div style={{ marginBottom: 20 }}>
+                        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
+                          기프티콘 수신 전화번호
+                        </label>
+                        <input
+                          type="tel"
+                          value={contactInfo}
+                          onChange={e => setContactInfo(e.target.value)}
+                          placeholder="예: 010-1234-5678"
+                          style={{ width: "100%", padding: "11px 14px", borderRadius: 8, border: `1px solid ${filled ? (valid ? "#22c55e" : "var(--accent-no)") : "var(--border)"}`, fontSize: 14, background: "var(--bg-secondary)", color: "var(--text-primary)", outline: "none", boxSizing: "border-box" }}
+                        />
+                        {filled && !valid && (
+                          <div style={{ fontSize: 12, color: "var(--accent-no)", marginTop: 5 }}>
+                            올바른 휴대폰 번호 형식이 아닙니다. (예: 010-1234-5678)
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* 버튼 */}
                   <div style={{ display: "flex", gap: 10 }}>
