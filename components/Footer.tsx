@@ -43,7 +43,14 @@ export default function Footer() {
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
             <li><Link href="/tos" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14 }}>서비스 이용약관</Link></li>
             <li><Link href="/privacy" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 700 }}>개인정보 처리방침</Link></li>
-            <li><a href="mailto:tlw.seoul@gmail.com" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14 }}>제휴 및 문의</a></li>
+            <li>
+              <button
+                onClick={() => (window as any).ChannelIO?.('openChat')}
+                style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: 14, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+              >
+                제휴 및 문의
+              </button>
+            </li>
           </ul>
         </div>
       </div>
