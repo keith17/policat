@@ -44,7 +44,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | 정산 RPC (resolve_market) | ✅ 완료 | 원자적 배당금+XP 분배 |
 | 환불 RPC (refund_market) | ✅ 완료 | 전액 환불 + hidden 처리 |
 | XP/Points 분리 | ✅ 완료 | 상점 구매 시 XP 유지 |
-| 포인트 상점 (shop_orders) | ✅ 완료 | 쿠폰 교환 신청 → 관리자 수동 발송 |
+| 포인트 상점 (shop_orders) | ✅ 완료 | 포인트 또는 PortOne 카드 결제, 관리자 수동 발송 |
 | 프로필 페이지 (내 거래 내역) | ✅ 완료 | 광고 시청 시뮬레이션 포함 |
 | 마켓 제안 페이지 (/create) | ✅ 완료 | pending 상태로 저장, 관리자 승인 필요 |
 | yes_pool/no_pool DB Trigger | ✅ 완료 | bets INSERT 시 자동 업데이트 |
@@ -58,6 +58,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | 신규 로고(브랜딩) 업데이트 | ✅ 완료 | 파란색/빨간색 원형 및 볼드 텍스트 SVG 적용 |
 | SEO 최적화 및 공지사항 | ✅ 완료 | sitemap, robots 설정 및 공지사항 UI |
 | 상점 상품 교환 본인인증 (PortOne) | ✅ 완료 | CI 기반 다계정 어뷰징 차단 구현 |
+| **(New)** 푸터 사업자 정보 | ✅ 완료 | 트루러브웨이츠, 대표자 박기석, 강남구 |
+| **(New)** 상점 카드 결제 (PortOne) | ✅ 완료 | `/api/shop-payment` 서버 검증, 중복 방지 |
 
 ### 🔴 남은 핵심 과제 (GitHub Issues)
 | Issue | 제목 | 우선순위 | 비고 |

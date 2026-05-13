@@ -48,12 +48,21 @@ export default function Footer() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: "40px auto 0", paddingTop: 24, borderTop: "1px solid var(--border)", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-        <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-          &copy; {new Date().getFullYear()} Policat. All rights reserved. 본 플랫폼의 예측에 사용되는 포인트는 실제 현금 가치가 없습니다.
+      {/* Business Info */}
+      <div style={{ maxWidth: 1200, margin: "32px auto 0", paddingTop: 24, borderTop: "1px solid var(--border)" }}>
+        <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.8, marginBottom: 12 }}>
+          <strong style={{ color: "var(--text-secondary)", fontWeight: 700 }}>트루러브웨이츠</strong>
+          &ensp;|&ensp;대표자: 박기석
+          &ensp;|&ensp;주소: 서울특별시 강남구 테헤란로63길 12, 235호
+          &ensp;|&ensp;문의: <a href="mailto:tlw.seoul@gmail.com" style={{ color: "var(--text-muted)", textDecoration: "underline" }}>tlw.seoul@gmail.com</a>
         </p>
-        <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-          Made with 💙 in Korea
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
+            &copy; {new Date().getFullYear()} Policat. All rights reserved.&ensp;본 플랫폼의 포인트는 실제 현금 가치가 없습니다.
+          </p>
+          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+            Made with 💙 in Korea
+          </div>
         </div>
       </div>
     </footer>
