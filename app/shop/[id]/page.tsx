@@ -119,9 +119,9 @@ export default function ShopItemPage() {
   };
 
   const handlePay = async () => {
-    if (!user) { showToast("구매하려면 로그인이 필요합니다.", "warn"); return; }
-    if (!contactInfo.trim()) { showToast("수신 전화번호 또는 이메일을 입력해주세요.", "warn"); return; }
-    if (!isVerified) { setShowVerifyModal(true); return; }
+    if (pointsToUse > 0 && !user) { showToast("포인트 사용 시 로그인이 필요합니다.", "warn"); return; }
+    if (!contactInfo.trim()) { showToast("수신 전화번호를 입력해주세요.", "warn"); return; }
+    if (user && !isVerified) { setShowVerifyModal(true); return; }
     await executePayment();
   };
 
@@ -280,12 +280,36 @@ export default function ShopItemPage() {
                   )}
                 </>
               ) : (
-                <div style={{ textAlign: "center" }}>
-                  <p style={{ color: "var(--text-secondary)", marginBottom: 16 }}>구매하려면 로그인이 필요합니다.</p>
-                  <a href="/login" style={{ display: "inline-block", padding: "14px 32px", background: "var(--accent)", color: "white", borderRadius: 12, fontWeight: 800, textDecoration: "none", fontSize: 15 }}>
-                    로그인하기
-                  </a>
-                </div>
+                /* 비로그인: 카드 전액 결제 허용 */
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 10, marginBottom: 20 }}>
+                    <span style={{ fontSize: 16 }}>💡</span>
+                    <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                      <a href="/api/auth/login" style={{ color: "var(--accent)", fontWeight: 700, textDecoration: "none" }}>로그인</a>하면 포인트로 더 저렴하게 구매할 수 있어요.
+                    </span>
+                  </div>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8, display: "block" }}>기프티콘 수신 전화번호</label>
+                    <input
+                      type="tel"
+                      value={contactInfo}
+                      onChange={e => setContactInfo(e.target.value)}
+                      placeholder="예: 010-1234-5678"
+                      style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handlePay}
+                    disabled={isProcessing}
+                    style={{ width: "100%", padding: "16px", borderRadius: 12, border: "none", background: isProcessing ? "var(--surface-alt)" : "var(--ink)", color: isProcessing ? "var(--text-muted)" : "white", fontSize: 16, fontWeight: 800, cursor: isProcessing ? "not-allowed" : "pointer" }}
+                  >
+                    {isProcessing ? "처리 중…" : `₩${item.price.toLocaleString()} 카드 결제`}
+                  </motion.button>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 12 }}>
+                    기프티콘은 전화번호로 발송 · 평일 기준 최대 1~2일 소요
+                  </p>
+                </>
               )}
             </div>
           </div>

@@ -138,11 +138,11 @@ export default function ShopPage() {
 
   const handlePay = async () => {
     if (!buyModal) return;
-    if (!user) { showToast("구매하려면 로그인이 필요합니다.", "warn"); setBuyModal(null); return; }
-    if (!contactInfo.trim()) { showToast("수신 연락처를 입력해주세요.", "warn"); return; }
-    if (xp < 500) { showToast("분석가 등급(XP 500) 이상부터 교환 가능합니다.", "warn"); return; }
-    if (cardAmount > 0 && cardAmount < 100) { showToast("카드 최소 결제 금액은 100원입니다. 포인트 사용량을 조절해주세요.", "warn"); return; }
-    if (!isVerified) { setShowVerifyModal(true); return; }
+    if (pointsToUse > 0 && !user) { showToast("포인트 사용 시 로그인이 필요합니다.", "warn"); return; }
+    if (!contactInfo.trim()) { showToast("수신 전화번호를 입력해주세요.", "warn"); return; }
+    if (user && xp < 500) { showToast("분석가 등급(XP 500) 이상부터 포인트 교환 가능합니다.", "warn"); return; }
+    if (cardAmount > 0 && cardAmount < 100) { showToast("카드 최소 결제 금액은 100원입니다.", "warn"); return; }
+    if (user && !isVerified) { setShowVerifyModal(true); return; }
     await executePayment();
   };
 
@@ -315,6 +315,17 @@ export default function ShopPage() {
                 </div>
 
                 <div style={{ padding: "0 24px 24px" }}>
+                  {/* 비로그인 안내 */}
+                  {!user && (
+                    <a href="/api/auth/login" style={{ textDecoration: "none" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 10, marginBottom: 14, cursor: "pointer" }}>
+                        <span style={{ fontSize: 18 }}>💡</span>
+                        <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                          <strong style={{ color: "var(--accent)" }}>로그인</strong>하면 포인트로 더 저렴하게 구매할 수 있어요.
+                        </span>
+                      </div>
+                    </a>
+                  )}
                   {/* 포인트 슬라이더 */}
                   {(() => {
                     const maxUsable = Math.floor(Math.min(points, buyModal.price) / 100) * 100;

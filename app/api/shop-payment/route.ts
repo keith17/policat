@@ -1,11 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { sendAdminOrderNotification } from "@/app/actions/email";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
 
   const { paymentId, itemId, itemName, price, contactInfo, pointsUsed = 0 } = await req.json();
 
@@ -14,6 +14,10 @@ export async function POST(req: Request) {
   }
   if (typeof pointsUsed !== "number" || pointsUsed < 0 || pointsUsed > price) {
     return NextResponse.json({ error: "잘못된 포인트 사용량입니다." }, { status: 400 });
+  }
+  // 포인트 사용 시에는 로그인 필수
+  if (pointsUsed > 0 && !user) {
+    return NextResponse.json({ error: "포인트 사용 시 로그인이 필요합니다." }, { status: 401 });
   }
 
   const cardAmount = price - pointsUsed;
@@ -25,7 +29,7 @@ export async function POST(req: Request) {
   // 포인트 잔액 사전 확인
   let currentPoints = 0;
   if (pointsUsed > 0) {
-    const { data: profile } = await supabase.from("profiles").select("points").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("points").eq("id", user!.id).single();
     if (!profile || profile.points < pointsUsed) {
       return NextResponse.json({ error: "보유 포인트가 부족합니다." }, { status: 400 });
     }
@@ -70,22 +74,25 @@ export async function POST(req: Request) {
   // 포인트 차감
   if (pointsUsed > 0) {
     const { error: pointsErr } = await supabase
-      .from("profiles").update({ points: currentPoints - pointsUsed }).eq("id", user.id);
+      .from("profiles").update({ points: currentPoints - pointsUsed }).eq("id", user!.id);
     if (pointsErr) {
       return NextResponse.json({ error: "포인트 차감 중 오류가 발생했습니다." }, { status: 500 });
     }
     await supabase.from("point_transactions").insert({
-      user_id: user.id,
+      user_id: user!.id,
       amount: -pointsUsed,
       type: "shop_purchase",
       description: `포인트 상점: ${itemName}${cardAmount > 0 ? ` (복합결제 포인트분)` : ""}`,
     });
   }
 
-  // 주문 기록
+  // 주문 기록 (게스트는 service role로 RLS 우회)
   const paymentMethod = cardAmount > 0 ? (pointsUsed > 0 ? "hybrid" : "card") : "points";
-  const { error: insertErr } = await supabase.from("shop_orders").insert({
-    user_id: user.id,
+  const insertClient = user
+    ? supabase
+    : createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const { error: insertErr } = await insertClient.from("shop_orders").insert({
+    user_id: user?.id ?? null,
     item_id: itemId,
     item_name: itemName,
     price,
