@@ -2,13 +2,15 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
+const AD_CLIENT = "ca-pub-4553206222153896";
+const AD_SLOT = "6304659289";
+
 interface AdBannerProps {
   type?: "horizontal" | "square" | "leaderboard";
   className?: string;
 }
 
-// 실 AdSense 슬롯 렌더링
-function AdSenseUnit({ slot, format = "auto" }: { slot: string; format?: string }) {
+function AdSenseUnit() {
   const pushed = useRef(false);
   useEffect(() => {
     if (pushed.current) return;
@@ -22,33 +24,22 @@ function AdSenseUnit({ slot, format = "auto" }: { slot: string; format?: string 
     <ins
       className="adsbygoogle"
       style={{ display: "block", width: "100%", minHeight: 1 }}
-      data-ad-client={process.env.NEXT_PUBLIC_ADSENSE_ID}
-      data-ad-slot={slot}
-      data-ad-format={format}
+      data-ad-client={AD_CLIENT}
+      data-ad-slot={AD_SLOT}
+      data-ad-format="auto"
       data-full-width-responsive="true"
     />
   );
 }
 
 export function AdBanner({ type = "horizontal", className = "" }: AdBannerProps) {
-  const pid = process.env.NEXT_PUBLIC_ADSENSE_ID;
-  const hSlot = process.env.NEXT_PUBLIC_AD_SLOT_HORIZONTAL;
-  const sSlot = process.env.NEXT_PUBLIC_AD_SLOT_SQUARE;
-  const slot = type === "square" ? sSlot : hSlot;
-
-  if (pid && slot) {
-    return (
-      <div className={`ad-container ${className}`} style={{ minHeight: type === "square" ? 250 : 72, overflow: "hidden" }}>
-        <span className="ad-label">광고</span>
-        <AdSenseUnit slot={slot} />
-      </div>
-    );
-  }
-
-  // 슬롯 미설정 시 빈 플레이스홀더 (AdSense 심사 대기 / 슬롯 미등록 상태)
   return (
-    <div className={`ad-container ${className}`} style={{ minHeight: type === "square" ? 250 : 72 }}>
+    <div
+      className={`ad-container ${className}`}
+      style={{ minHeight: type === "square" ? 250 : 72, overflow: "hidden" }}
+    >
       <span className="ad-label">광고</span>
+      <AdSenseUnit />
     </div>
   );
 }

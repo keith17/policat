@@ -23,14 +23,12 @@ export default function RootLayout({
   return (
     <html lang="ko" data-theme="light" data-accent="cobalt" data-density="comfy">
       <head>
-        {process.env.NEXT_PUBLIC_ADSENSE_ID && (
-          <Script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_ID}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-        )}
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4553206222153896"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
       </head>
       <body style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
