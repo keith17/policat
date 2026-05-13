@@ -26,7 +26,7 @@ interface MockMarket {
 export default function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"users" | "markets" | "orders" | "events" | "notices">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "markets" | "orders" | "events" | "notices" | "shop_items">("users");
   const [marketFilter, setMarketFilter] = useState<"all" | "pending" | "active" | "ended" | "resolved">("all");
 
   const [users, setUsers] = useState<any[]>([]);
@@ -34,6 +34,9 @@ export default function AdminDashboard() {
   const [events, setEvents] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
+  const [adminShopItems, setAdminShopItems] = useState<any[]>([]);
+  const [newShopItem, setNewShopItem] = useState({ id: "", name: "", category: "", description: "", price: "", icon_key: "gift" });
+  const ICON_KEYS = ["gift", "coffee", "tag", "truck", "zap"];
 
   const supabase = createClient();
 
@@ -67,6 +70,10 @@ export default function AdminDashboard() {
         // Fetch notices
         const { data: ntc } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
         if (ntc) setNotices(ntc);
+
+        // Fetch shop items (admin sees all including inactive)
+        const { data: si } = await supabase.from("shop_items").select("*").order("sort_order", { ascending: true });
+        if (si) setAdminShopItems(si);
       }
       setLoading(false);
     }
@@ -81,6 +88,35 @@ export default function AdminDashboard() {
   const [refundReason, setRefundReason] = useState("");
   const [newEvent, setNewEvent] = useState({ title: "", description: "" });
   const [newNotice, setNewNotice] = useState({ title: "", content: "" });
+
+  const handleAddShopItem = async () => {
+    const { id, name, category, description, price, icon_key } = newShopItem;
+    if (!id || !name || !category || !description || !price) { showToast("모든 필드를 입력하세요.", "warn"); return; }
+    const { error } = await supabase.from("shop_items").insert({
+      id: id.trim().toLowerCase().replace(/\s+/g, "-"),
+      name, category, description,
+      price: parseInt(price),
+      icon_key,
+      sort_order: adminShopItems.length + 1,
+    });
+    if (error) { showToast("추가 실패: " + error.message, "warn"); return; }
+    const { data } = await supabase.from("shop_items").select("*").order("sort_order", { ascending: true });
+    if (data) setAdminShopItems(data);
+    setNewShopItem({ id: "", name: "", category: "", description: "", price: "", icon_key: "gift" });
+    showToast("상품 추가 완료");
+  };
+
+  const handleToggleShopItem = async (id: string, is_active: boolean) => {
+    await supabase.from("shop_items").update({ is_active: !is_active }).eq("id", id);
+    setAdminShopItems(prev => prev.map(i => i.id === id ? { ...i, is_active: !is_active } : i));
+  };
+
+  const handleDeleteShopItem = async (id: string) => {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    await supabase.from("shop_items").delete().eq("id", id);
+    setAdminShopItems(prev => prev.filter(i => i.id !== id));
+    showToast("상품 삭제 완료");
+  };
 
   // (Data loading moved up)
 
@@ -360,6 +396,17 @@ export default function AdminDashboard() {
             }}
           >
             <Bell size={18} /> 공지사항 관리
+          </button>
+          <button
+            onClick={() => setActiveTab("shop_items")}
+            style={{
+              padding: "12px 24px", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s", border: "none",
+              background: activeTab === "shop_items" ? "var(--accent-yes)" : "var(--bg-card)",
+              color: activeTab === "shop_items" ? "white" : "var(--text-secondary)",
+            }}
+          >
+            <Store size={18} /> 상점 상품
           </button>
         </div>
 
@@ -650,6 +697,49 @@ export default function AdminDashboard() {
                   </div>
                 ))}
                 {notices.length === 0 && <div style={{ color: "var(--text-muted)", textAlign: "center", padding: 40 }}>등록된 공지사항이 없습니다.</div>}
+              </div>
+            </div>
+          ) : activeTab === "shop_items" ? (
+            <div style={{ padding: 20 }}>
+              <div style={{ background: "var(--bg-secondary)", borderRadius: 12, padding: 20, marginBottom: 24 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 16 }}>신규 상품 등록</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <input type="text" placeholder="ID (영문, 예: coffee-1)" value={newShopItem.id} onChange={e => setNewShopItem({...newShopItem, id: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
+                  <input type="text" placeholder="상품명" value={newShopItem.name} onChange={e => setNewShopItem({...newShopItem, name: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
+                  <input type="text" placeholder="카테고리 (예: 음료/디저트)" value={newShopItem.category} onChange={e => setNewShopItem({...newShopItem, category: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
+                  <input type="number" placeholder="가격 (포인트=원)" value={newShopItem.price} onChange={e => setNewShopItem({...newShopItem, price: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <input type="text" placeholder="상품 설명" value={newShopItem.description} onChange={e => setNewShopItem({...newShopItem, description: e.target.value})} style={{ flex: 1, minWidth: 200, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }} />
+                  <select value={newShopItem.icon_key} onChange={e => setNewShopItem({...newShopItem, icon_key: e.target.value})} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)" }}>
+                    {ICON_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                  </select>
+                  <button onClick={handleAddShopItem} style={{ padding: "10px 20px", background: "var(--accent-yes)", color: "white", borderRadius: 8, fontWeight: 700, border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+                    <PlusCircle size={16} /> 추가
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {adminShopItems.map(item => (
+                  <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 18px", borderRadius: 10, border: `1px solid ${item.is_active ? "var(--border)" : "rgba(0,0,0,0.1)"}`, background: item.is_active ? "var(--bg-card)" : "var(--bg-secondary)", opacity: item.is_active ? 1 : 0.55 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 800, fontSize: 15, color: "var(--text-primary)" }}>{item.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                        [{item.id}] · {item.category} · {item.price.toLocaleString()}P · 아이콘: {item.icon_key}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => handleToggleShopItem(item.id, item.is_active)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid var(--border)", background: item.is_active ? "rgba(34,211,160,0.1)" : "rgba(244,63,94,0.1)", color: item.is_active ? "var(--accent-yes)" : "var(--accent-no)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                        {item.is_active ? "활성" : "비활성"}
+                      </button>
+                      <button onClick={() => handleDeleteShopItem(item.id)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(244,63,94,0.3)", background: "rgba(244,63,94,0.1)", color: "var(--accent-no)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {adminShopItems.length === 0 && <div style={{ color: "var(--text-muted)", textAlign: "center", padding: 40 }}>등록된 상품이 없습니다.</div>}
               </div>
             </div>
           ) : null}

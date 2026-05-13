@@ -5,28 +5,28 @@ import { createClient } from "@/utils/supabase/client";
 import { formatPoints } from "@/lib/data";
 import { sendShopOrderEmail } from "@/app/actions/email";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Coffee, Gift, Tag, CreditCard, Coins } from "lucide-react";
+import { ShoppingBag, Coffee, Gift, Tag, Truck, Coins, CreditCard, Zap } from "lucide-react";
 
-type PayMethod = "points" | "card";
-
-const shopItems = [
-  { id: "coffee-1",     name: "스타벅스 아이스 아메리카노 T",    price: 4500,  priceKRW: 4500,  icon: <Coffee size={40} color="var(--purple-primary)" />, category: "음료/디저트", desc: "전국 스타벅스 매장에서 사용 가능한 기프티콘" },
-  { id: "naver-5000",   name: "네이버페이 포인트 5,000원권",      price: 5000,  priceKRW: 5000,  icon: <Gift size={40} color="#15c559" />,               category: "상품권",     desc: "네이버페이 결제 시 사용 가능한 포인트 쿠폰" },
-  { id: "gs25-3000",    name: "GS25 모바일 상품권 3,000원권",     price: 3000,  priceKRW: 3000,  icon: <Tag size={40} color="#0072bb" />,                category: "편의점",     desc: "전국 GS25 편의점에서 현금처럼 사용 가능" },
-  { id: "baemin-10000", name: "배달의민족 상품권 10,000원권",     price: 10000, priceKRW: 10000, icon: <Gift size={40} color="#2ac1bc" />,               category: "배달/외식", desc: "배민 앱에서 배달/포장 주문 시 사용 가능" },
-];
+const ICON_MAP: Record<string, React.ReactNode> = {
+  coffee: <Coffee size={40} color="var(--purple-primary)" />,
+  gift:   <Gift size={40} color="#15c559" />,
+  tag:    <Tag size={40} color="#0072bb" />,
+  truck:  <Truck size={40} color="#2ac1bc" />,
+  zap:    <Zap size={40} color="#eab308" />,
+};
 
 export default function ShopPage() {
-  const [user, setUser] = useState<any>(null);
-  const [points, setPoints] = useState(0);
-  const [xp, setXp] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [buyModal, setBuyModal] = useState<(typeof shopItems)[0] | null>(null);
-  const [payMethod, setPayMethod] = useState<PayMethod>("points");
-  const [isVerified, setIsVerified] = useState(false);
+  const [user, setUser]               = useState<any>(null);
+  const [points, setPoints]           = useState(0);
+  const [xp, setXp]                   = useState(0);
+  const [loading, setLoading]         = useState(true);
+  const [shopItems, setShopItems]     = useState<any[]>([]);
+  const [buyModal, setBuyModal]       = useState<any | null>(null);
+  const [pointsToUse, setPointsToUse] = useState(0);
+  const [isVerified, setIsVerified]   = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [contactInfo, setContactInfo] = useState("");
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "warn" } | null>(null);
+  const [toast, setToast]             = useState<{ msg: string; type: "success" | "warn" } | null>(null);
 
   const supabase = createClient();
 
@@ -38,35 +38,41 @@ export default function ShopPage() {
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
         if (profile) {
           setPoints(profile.points);
-          setXp(profile.xp !== undefined ? profile.xp : profile.points);
+          setXp(profile.xp ?? profile.points);
           setIsVerified(!!profile.is_verified);
-          // 이메일 기본값 설정
           setContactInfo(profile.email || user.email || "");
         }
       }
+      const { data: items } = await supabase
+        .from("shop_items")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      setShopItems(items ?? []);
       setLoading(false);
     }
     loadData();
   }, [supabase]);
-
-  // 모달 열 때 포인트 충분하면 포인트, 아니면 카드로 기본 선택
-  const openModal = (item: (typeof shopItems)[0]) => {
-    setBuyModal(item);
-    setPayMethod(points >= item.price ? "points" : "card");
-  };
 
   const showToast = (msg: string, type: "success" | "warn" = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
   };
 
-  // 본인인증 공통 함수
+  const openModal = (item: any) => {
+    setBuyModal(item);
+    // 기본: 가능한 최대 포인트 사용
+    setPointsToUse(Math.min(points, item.price));
+  };
+
+  const cardAmount = buyModal ? buyModal.price - pointsToUse : 0;
+
   const ensureVerified = async (): Promise<boolean> => {
     if (isVerified) return true;
     if (!window.confirm("상품 구매를 위해 최초 1회 휴대폰 본인인증이 필요합니다. 진행하시겠습니까?")) return false;
     try {
       const PortOne = await import("@portone/browser-sdk/v2");
-      const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
+      const storeId    = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
       const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
       if (!storeId || !channelKey) {
         showToast("포트원 설정이 누락되었습니다. 관리자에게 문의하세요.", "warn");
@@ -100,102 +106,87 @@ export default function ShopPage() {
     }
   };
 
-  // 포인트 결제
-  const handlePointsPay = async () => {
+  const handlePay = async () => {
     if (!buyModal || !user) return;
     if (!contactInfo.trim()) { showToast("수신 연락처를 입력해주세요.", "warn"); return; }
-    if (points < buyModal.price) { showToast("포인트가 부족합니다.", "warn"); return; }
     if (xp < 500) { showToast("분석가 등급(XP 500) 이상부터 교환 가능합니다.", "warn"); return; }
+    if (cardAmount > 0 && cardAmount < 100) { showToast("카드 최소 결제 금액은 100원입니다. 포인트 사용량을 조절해주세요.", "warn"); return; }
 
     setIsProcessing(true);
     const verified = await ensureVerified();
     if (!verified) { setIsProcessing(false); return; }
 
-    const newPoints = points - buyModal.price;
-    await supabase.from("profiles").update({ points: newPoints }).eq("id", user.id);
-    await supabase.from("shop_orders").insert({
-      user_id: user.id, item_id: buyModal.id, item_name: buyModal.name,
-      price: buyModal.price, contact_info: contactInfo, status: "pending",
-      payment_method: "points",
+    let paymentId: string | undefined;
+
+    // 카드 결제 필요 시 PortOne 실행
+    if (cardAmount > 0) {
+      try {
+        const PortOne  = await import("@portone/browser-sdk/v2");
+        const storeId    = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
+        const channelKey = process.env.NEXT_PUBLIC_PORTONE_PAYMENT_CHANNEL_KEY;
+        if (!storeId || !channelKey) {
+          showToast("카드 결제 설정이 누락되었습니다. 관리자에게 문의하세요.", "warn");
+          setIsProcessing(false);
+          return;
+        }
+        const pid = `order-${crypto.randomUUID()}`;
+        const res = await PortOne.requestPayment({
+          storeId,
+          channelKey,
+          paymentId: pid,
+          orderName: pointsToUse > 0
+            ? `${buyModal.name} (포인트 ${pointsToUse.toLocaleString()}P + 카드)`
+            : buyModal.name,
+          totalAmount: cardAmount,
+          currency: "CURRENCY_KRW",
+          payMethod: "CARD",
+        } as any);
+
+        if (!res || res.code != null) {
+          showToast(res?.message ?? "결제가 취소되었습니다.", "warn");
+          setIsProcessing(false);
+          return;
+        }
+        paymentId = res.paymentId;
+      } catch (err) {
+        console.error(err);
+        showToast("결제 중 오류가 발생했습니다.", "warn");
+        setIsProcessing(false);
+        return;
+      }
+    }
+
+    // 서버 검증 & 주문 기록 (포인트 차감 포함)
+    const verifyRes = await fetch("/api/shop-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentId,
+        itemId: buyModal.id,
+        itemName: buyModal.name,
+        price: buyModal.price,
+        contactInfo,
+        pointsUsed: pointsToUse,
+      }),
     });
-    await supabase.from("point_transactions").insert({
-      user_id: user.id, amount: -buyModal.price, type: "shop_purchase",
-      description: `포인트 상점: ${buyModal.name}`,
-    });
-    setPoints(newPoints);
+    const verifyData = await verifyRes.json();
+    if (!verifyRes.ok) {
+      showToast(verifyData.error ?? "결제 처리 실패", "warn");
+      setIsProcessing(false);
+      return;
+    }
+
+    // 포인트 UI 업데이트
+    if (verifyData.points !== undefined) setPoints(verifyData.points);
+
     if (user.email) sendShopOrderEmail(user.email, buyModal.name).catch(console.error);
     setBuyModal(null);
     setIsProcessing(false);
-    showToast(`✅ ${buyModal.name} 교환 신청 완료!`, "success");
-  };
 
-  // 카드 결제
-  const handleCardPay = async () => {
-    if (!buyModal || !user) return;
-    if (!contactInfo.trim()) { showToast("수신 연락처를 입력해주세요.", "warn"); return; }
-
-    setIsProcessing(true);
-    const verified = await ensureVerified();
-    if (!verified) { setIsProcessing(false); return; }
-
-    try {
-      const PortOne = await import("@portone/browser-sdk/v2");
-      const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
-      const channelKey = process.env.NEXT_PUBLIC_PORTONE_PAYMENT_CHANNEL_KEY;
-
-      if (!storeId || !channelKey) {
-        showToast("카드 결제 설정이 누락되었습니다. 관리자에게 문의하세요.", "warn");
-        setIsProcessing(false);
-        return;
-      }
-
-      const paymentId = `order-${crypto.randomUUID()}`;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await PortOne.requestPayment({
-        storeId,
-        channelKey,
-        paymentId,
-        orderName: buyModal.name,
-        totalAmount: buyModal.priceKRW,
-        currency: "CURRENCY_KRW",
-        payMethod: "CARD",
-      } as any);
-
-      if (!res || res.code != null) {
-        showToast(res?.message ?? "결제가 취소되었습니다.", "warn");
-        setIsProcessing(false);
-        return;
-      }
-
-      // 서버사이드 결제 검증
-      const verifyRes = await fetch("/api/shop-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          paymentId: res.paymentId,
-          itemId: buyModal.id,
-          itemName: buyModal.name,
-          price: buyModal.priceKRW,
-          contactInfo,
-        }),
-      });
-
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok) {
-        showToast(verifyData.error ?? "결제 검증 실패", "warn");
-        setIsProcessing(false);
-        return;
-      }
-
-      if (user.email) sendShopOrderEmail(user.email, buyModal.name).catch(console.error);
-      setBuyModal(null);
-      setIsProcessing(false);
-      showToast(`✅ 카드 결제 완료! ${buyModal.name} 발송 처리 중`, "success");
-    } catch (err) {
-      console.error(err);
-      showToast("결제 중 오류가 발생했습니다.", "warn");
-      setIsProcessing(false);
-    }
+    const payLabel = cardAmount > 0
+      ? pointsToUse > 0 ? `${pointsToUse.toLocaleString()}P + ₩${cardAmount.toLocaleString()} 복합결제 완료!` : `₩${cardAmount.toLocaleString()} 카드 결제 완료!`
+      : `${pointsToUse.toLocaleString()}P 결제 완료!`;
+    showToast(`✅ ${payLabel}`, "success");
   };
 
   if (!user && !loading) {
@@ -210,8 +201,6 @@ export default function ShopPage() {
     );
   }
 
-  const hasEnoughPoints = buyModal ? points >= buyModal.price : false;
-
   return (
     <div style={{ minHeight: "100vh", paddingBottom: 80, background: "var(--bg-primary)" }}>
       <Navbar points={points} xp={xp} streak={0} />
@@ -220,7 +209,7 @@ export default function ShopPage() {
         <section style={{ textAlign: "center", marginBottom: 40 }}>
           <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 12, letterSpacing: "-0.02em", color: "var(--text-primary)" }}>포인트 상점</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.6 }}>
-            포인트로 무료 교환하거나, 신용카드로 바로 구매하세요.
+            포인트와 카드를 자유롭게 섞어서 결제하세요.
           </p>
         </section>
 
@@ -236,8 +225,8 @@ export default function ShopPage() {
               <div style={{ fontSize: 30, fontWeight: 900, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>{formatPoints(points)}</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>포인트 교환 시 XP(티어)는 유지됩니다.</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>신용카드 결제는 포인트와 무관합니다.</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>포인트와 신용카드를 원하는 비율로 혼합 결제 가능합니다.</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>포인트 교환 시 XP(티어)는 유지됩니다.</div>
             </div>
           </div>
         )}
@@ -245,53 +234,43 @@ export default function ShopPage() {
         {/* 상품 그리드 */}
         <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))" }}>
           {shopItems.map(item => {
-            const canUsePoints = points >= item.price;
+            const canFull = points >= item.price;
             return (
-              <motion.div
-                key={item.id}
-                whileHover={{ y: -4 }}
-                style={{
-                  background: "var(--bg-card)", border: "1px solid var(--border)",
-                  borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column",
-                  boxShadow: "var(--shadow-sm)"
-                }}
-              >
+              <motion.div key={item.id} whileHover={{ y: -4 }} style={{
+                background: "var(--bg-card)", border: "1px solid var(--border)",
+                borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column",
+                boxShadow: "var(--shadow-sm)"
+              }}>
                 <div style={{ height: 140, background: "var(--surface-alt)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <motion.div whileHover={{ scale: 1.1 }}>{item.icon}</motion.div>
+                  <motion.div whileHover={{ scale: 1.1 }}>
+                    {ICON_MAP[item.icon_key] ?? ICON_MAP.gift}
+                  </motion.div>
                 </div>
                 <div style={{ padding: 20, flex: 1, display: "flex", flexDirection: "column" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", marginBottom: 6 }}>{item.category}</div>
                   <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.4 }}>{item.name}</h3>
-                  <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 20, flex: 1 }}>{item.desc}</p>
-
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => openModal(item)}
-                      style={{
-                        flex: 1, padding: "11px 0", borderRadius: 8, border: "none",
-                        background: canUsePoints ? "var(--accent)" : "var(--surface-alt)",
-                        color: canUsePoints ? "white" : "var(--text-secondary)",
-                        fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5
-                      }}
-                    >
-                      <Coins size={14} /> {formatPoints(item.price)}
-                    </button>
-                    <button
-                      onClick={() => { setBuyModal(item); setPayMethod("card"); }}
-                      style={{
-                        flex: 1, padding: "11px 0", borderRadius: 8,
-                        border: "1px solid var(--border)", background: "var(--bg-card-hover)",
-                        color: "var(--text-primary)", fontWeight: 700, fontSize: 13, cursor: "pointer",
-                        display: "flex", alignItems: "center", justifyContent: "center", gap: 5
-                      }}
-                    >
-                      <CreditCard size={14} /> ₩{item.priceKRW.toLocaleString()}
-                    </button>
-                  </div>
+                  <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 20, flex: 1 }}>{item.description}</p>
+                  <button
+                    onClick={() => openModal(item)}
+                    style={{
+                      width: "100%", padding: "13px 0", borderRadius: 8, border: "none",
+                      background: canFull ? "var(--accent)" : "var(--ink)",
+                      color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+                    }}
+                  >
+                    {canFull ? <><Coins size={15} /> {formatPoints(item.price)} 구매</> : <><CreditCard size={15} /> ₩{item.price.toLocaleString()} 구매</>}
+                  </button>
                 </div>
               </motion.div>
             );
           })}
+          {!loading && shopItems.length === 0 && (
+            <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: 60, color: "var(--text-muted)" }}>
+              <ShoppingBag size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
+              <p>준비 중인 상품이 없습니다.</p>
+            </div>
+          )}
         </div>
       </main>
 
@@ -304,87 +283,91 @@ export default function ShopPage() {
               onClick={() => !isProcessing && setBuyModal(null)}
               style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
             />
-            <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 201, width: "calc(100% - 40px)", maxWidth: 440 }}>
+            <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 201, width: "calc(100% - 40px)", maxWidth: 460 }}>
               <motion.div
                 initial={{ opacity: 0, scale: 0.92, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92, y: 20 }}
-                style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 48px rgba(0,0,0,0.12)" }}
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 48px rgba(0,0,0,0.2)" }}
               >
-                {/* 모달 헤더 */}
                 <div style={{ padding: "24px 24px 0", textAlign: "center" }}>
-                  <div style={{ marginBottom: 12 }}>{buyModal.icon}</div>
+                  <div style={{ marginBottom: 12 }}>{ICON_MAP[buyModal.icon_key] ?? ICON_MAP.gift}</div>
                   <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>{buyModal.name}</h3>
-                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>{buyModal.desc}</p>
-
-                  {/* 결제 방법 탭 */}
-                  <div style={{
-                    display: "flex", background: "var(--surface-alt)", borderRadius: "var(--radius-sm)",
-                    padding: 4, marginBottom: 20
-                  }}>
-                    <button
-                      onClick={() => setPayMethod("points")}
-                      style={{
-                        flex: 1, padding: "9px 0", borderRadius: 6, border: "none", cursor: "pointer",
-                        fontWeight: 700, fontSize: 13, transition: "all 0.15s",
-                        background: payMethod === "points" ? "var(--bg-card)" : "transparent",
-                        color: payMethod === "points" ? "var(--text-primary)" : "var(--text-muted)",
-                        boxShadow: payMethod === "points" ? "var(--shadow-sm)" : "none",
-                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6
-                      }}
-                    >
-                      <Coins size={14} /> 포인트 결제
-                    </button>
-                    <button
-                      onClick={() => setPayMethod("card")}
-                      style={{
-                        flex: 1, padding: "9px 0", borderRadius: 6, border: "none", cursor: "pointer",
-                        fontWeight: 700, fontSize: 13, transition: "all 0.15s",
-                        background: payMethod === "card" ? "var(--bg-card)" : "transparent",
-                        color: payMethod === "card" ? "var(--text-primary)" : "var(--text-muted)",
-                        boxShadow: payMethod === "card" ? "var(--shadow-sm)" : "none",
-                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6
-                      }}
-                    >
-                      <CreditCard size={14} /> 신용카드
-                    </button>
-                  </div>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>{buyModal.description}</p>
                 </div>
 
                 <div style={{ padding: "0 24px 24px" }}>
+                  {/* 포인트 슬라이더 */}
+                  <div style={{ background: "var(--surface-alt)", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+                        <Coins size={15} color="var(--accent)" /> 포인트 사용
+                      </span>
+                      <span style={{ fontSize: 14, fontWeight: 900, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>
+                        {pointsToUse.toLocaleString()}P
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={0}
+                      max={Math.min(points, buyModal.price)}
+                      step={100}
+                      value={pointsToUse}
+                      onChange={e => setPointsToUse(Number(e.target.value))}
+                      style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }}
+                    />
+
+                    {/* 빠른 선택 */}
+                    <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                      {[
+                        { label: "사용 안 함", val: 0 },
+                        { label: "절반", val: Math.floor(Math.min(points, buyModal.price) / 2 / 100) * 100 },
+                        { label: "전부 사용", val: Math.min(points, buyModal.price) },
+                      ].map(({ label, val }) => (
+                        <button
+                          key={label}
+                          onClick={() => setPointsToUse(val)}
+                          style={{
+                            padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                            border: pointsToUse === val ? "1px solid var(--accent)" : "1px solid var(--border)",
+                            background: pointsToUse === val ? "rgba(var(--accent-rgb),0.1)" : "transparent",
+                            color: pointsToUse === val ? "var(--accent)" : "var(--text-secondary)",
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* 결제 요약 */}
-                  <div style={{ background: "var(--surface-alt)", borderRadius: "var(--radius-sm)", padding: "14px 16px", marginBottom: 16 }}>
-                    {payMethod === "points" ? (
-                      <>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 }}>
-                          <span style={{ color: "var(--text-secondary)" }}>보유 포인트</span>
-                          <span style={{ fontWeight: 700, fontFamily: "var(--font-mono)" }}>{formatPoints(points)}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 }}>
-                          <span style={{ color: "var(--text-secondary)" }}>차감 포인트</span>
-                          <span style={{ fontWeight: 700, color: "var(--accent-no)", fontFamily: "var(--font-mono)" }}>−{formatPoints(buyModal.price)}</span>
-                        </div>
-                        <div style={{ height: 1, background: "var(--border)", margin: "10px 0" }} />
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-                          <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>결제 후 잔액</span>
-                          <span style={{
-                            fontWeight: 800, fontFamily: "var(--font-mono)",
-                            color: hasEnoughPoints ? "var(--text-primary)" : "var(--accent-no)"
-                          }}>
-                            {hasEnoughPoints ? formatPoints(points - buyModal.price) : "포인트 부족"}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-                          <span style={{ color: "var(--text-secondary)" }}>카드 결제 금액</span>
-                          <span style={{ fontWeight: 800, fontSize: 18, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
-                            ₩{buyModal.priceKRW.toLocaleString()}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>
-                          포인트 잔액과 무관하게 결제됩니다.
-                        </div>
-                      </>
+                  <div style={{ background: "var(--bg-secondary)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ color: "var(--text-secondary)" }}>상품 금액</span>
+                      <span style={{ fontWeight: 700, fontFamily: "var(--font-mono)" }}>₩{buyModal.price.toLocaleString()}</span>
+                    </div>
+                    {pointsToUse > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <span style={{ color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 4 }}>
+                          <Coins size={13} /> 포인트 차감
+                        </span>
+                        <span style={{ fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>
+                          −{pointsToUse.toLocaleString()}P
+                        </span>
+                      </div>
+                    )}
+                    <div style={{ height: 1, background: "var(--border)", margin: "8px 0" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontWeight: 800, color: "var(--text-primary)" }}>
+                        {cardAmount === 0 ? "포인트 전액 결제" : pointsToUse > 0 ? "카드 추가 결제" : "카드 전액 결제"}
+                      </span>
+                      <span style={{ fontWeight: 900, fontSize: 16, fontFamily: "var(--font-mono)", color: cardAmount > 0 ? "var(--text-primary)" : "var(--accent)" }}>
+                        {cardAmount > 0 ? `₩${cardAmount.toLocaleString()}` : "무료 (포인트)"}
+                      </span>
+                    </div>
+                    {cardAmount > 0 && cardAmount < 100 && (
+                      <div style={{ marginTop: 8, fontSize: 12, color: "var(--accent-no)" }}>
+                        ⚠️ 카드 최소 결제 금액은 100원입니다. 포인트 사용량을 조절하세요.
+                      </div>
                     )}
                   </div>
 
@@ -411,37 +394,24 @@ export default function ShopPage() {
                     >
                       취소
                     </button>
-                    {payMethod === "points" ? (
-                      <motion.button
-                        whileTap={{ scale: 0.97 }}
-                        onClick={handlePointsPay}
-                        disabled={isProcessing || !hasEnoughPoints}
-                        style={{
-                          flex: 2, padding: "13px", borderRadius: 8, border: "none", fontSize: 14, fontWeight: 700, cursor: hasEnoughPoints ? "pointer" : "not-allowed",
-                          background: hasEnoughPoints ? "var(--accent)" : "var(--surface-alt)",
-                          color: hasEnoughPoints ? "white" : "var(--text-muted)",
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: 6
-                        }}
-                      >
-                        <Coins size={15} />
-                        {isProcessing ? "처리 중…" : hasEnoughPoints ? `${formatPoints(buyModal.price)} 결제` : "포인트 부족"}
-                      </motion.button>
-                    ) : (
-                      <motion.button
-                        whileTap={{ scale: 0.97 }}
-                        onClick={handleCardPay}
-                        disabled={isProcessing}
-                        style={{
-                          flex: 2, padding: "13px", borderRadius: 8, border: "none", fontSize: 14, fontWeight: 700, cursor: "pointer",
-                          background: "var(--ink)", color: "white",
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                          opacity: isProcessing ? 0.6 : 1
-                        }}
-                      >
-                        <CreditCard size={15} />
-                        {isProcessing ? "결제 처리 중…" : `₩${buyModal.priceKRW.toLocaleString()} 카드 결제`}
-                      </motion.button>
-                    )}
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={handlePay}
+                      disabled={isProcessing || (cardAmount > 0 && cardAmount < 100)}
+                      style={{
+                        flex: 2, padding: "13px", borderRadius: 8, border: "none", fontSize: 14, fontWeight: 700,
+                        cursor: isProcessing || (cardAmount > 0 && cardAmount < 100) ? "not-allowed" : "pointer",
+                        background: cardAmount > 0 ? "var(--ink)" : "var(--accent)",
+                        color: "white", opacity: isProcessing ? 0.6 : 1,
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+                      }}
+                    >
+                      {cardAmount > 0 ? <CreditCard size={15} /> : <Coins size={15} />}
+                      {isProcessing ? "처리 중…" : cardAmount > 0
+                        ? (pointsToUse > 0 ? `${pointsToUse.toLocaleString()}P + ₩${cardAmount.toLocaleString()} 결제` : `₩${cardAmount.toLocaleString()} 카드 결제`)
+                        : `${pointsToUse.toLocaleString()}P 결제`
+                      }
+                    </motion.button>
                   </div>
                 </div>
               </motion.div>
@@ -457,7 +427,7 @@ export default function ShopPage() {
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.9 }}
               style={{
-                background: toast.type === "success" ? "linear-gradient(135deg, #059669, #22d3a0)" : "linear-gradient(135deg, #be123c, #f43f5e)",
+                background: toast.type === "success" ? "linear-gradient(135deg,#059669,#22d3a0)" : "linear-gradient(135deg,#be123c,#f43f5e)",
                 borderRadius: 14, padding: "14px 24px", color: "white", fontWeight: 700, fontSize: 15, boxShadow: "0 8px 32px rgba(0,0,0,0.4)"
               }}
             >
