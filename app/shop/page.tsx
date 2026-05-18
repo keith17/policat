@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
 import { formatPoints } from "@/lib/data";
 import { motion } from "framer-motion";
-import { ShoppingBag, Coffee, Gift, Tag, Truck, Zap, Coins, CreditCard } from "lucide-react";
+import { ShoppingBag, Coffee, Gift, Tag, Truck, Zap, Coins } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   coffee: <Coffee size={40} color="var(--purple-primary)" />,
@@ -54,27 +54,9 @@ export default function ShopPage() {
         <section style={{ textAlign: "center", marginBottom: 32 }}>
           <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 12, letterSpacing: "-0.02em", color: "var(--text-primary)" }}>포인트 상점</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.6 }}>
-            포인트와 카드를 자유롭게 섞어서 결제하세요.
+            예측 마켓에서 포인트를 모아 기프티콘으로 교환하세요.
           </p>
         </section>
-
-        {/* 신용카드 안내 배너 */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 14, padding: "16px 20px",
-          background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(6,182,212,0.10))",
-          border: "1px solid rgba(99,102,241,0.25)", borderRadius: 12, marginBottom: 24,
-        }}>
-          <div style={{ fontSize: 28, flexShrink: 0 }}>💳</div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)", marginBottom: 2 }}>
-              포인트 없이도 구매 가능!
-            </div>
-            <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-              포인트가 부족하거나 없어도 신용카드로 바로 구매할 수 있어요.
-              포인트와 카드를 섞어서 결제하면 더욱 저렴하게!
-            </div>
-          </div>
-        </div>
 
         {/* 보유 포인트 */}
         {user ? (
@@ -88,8 +70,7 @@ export default function ShopPage() {
               <div style={{ fontSize: 28, fontWeight: 900, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>{formatPoints(points)}</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>포인트와 신용카드 혼합 결제 가능합니다.</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>포인트 교환 시 XP(티어)는 유지됩니다.</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>포인트 교환 시 XP(티어)는 유지됩니다.</div>
             </div>
           </div>
         ) : (
@@ -99,7 +80,7 @@ export default function ShopPage() {
           }}>
             <span style={{ fontSize: 18 }}>🔑</span>
             <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>로그인</strong>하면 포인트를 사용해 더 저렴하게 구매할 수 있어요.
+              <strong style={{ color: "var(--text-primary)" }}>로그인</strong>하고 예측 마켓에 참여해 포인트를 모아보세요.
             </span>
           </div>
         )}
@@ -107,7 +88,7 @@ export default function ShopPage() {
         {/* 상품 그리드 */}
         <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))" }}>
           {shopItems.map(item => {
-            const canFull = points >= item.price;
+            const canBuy = user && points >= item.price;
             const hasDiscount = item.discount_rate && item.discount_rate > 0;
             return (
               <Link key={item.id} href={`/shop/${item.id}`} style={{ textDecoration: "none" }}>
@@ -161,16 +142,11 @@ export default function ShopPage() {
                     </div>
                     <div style={{
                       width: "100%", padding: "12px 0", borderRadius: 8,
-                      background: user && canFull ? "var(--accent)" : "var(--ink)",
-                      color: "white", fontWeight: 700, fontSize: 13,
+                      background: canBuy ? "var(--accent)" : "var(--surface-alt)",
+                      color: canBuy ? "white" : "var(--text-muted)", fontWeight: 700, fontSize: 13,
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     }}>
-                      {!user
-                        ? <><CreditCard size={14} /> ₩{item.price.toLocaleString()} 구매하기</>
-                        : canFull
-                          ? <><Coins size={14} /> {formatPoints(item.price)} 구매</>
-                          : <><CreditCard size={14} /> ₩{item.price.toLocaleString()} 구매</>
-                      }
+                      <Coins size={14} /> {formatPoints(item.price)} 구매
                     </div>
                   </div>
                 </motion.div>

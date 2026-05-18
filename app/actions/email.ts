@@ -63,7 +63,7 @@ export async function sendShopOrderEmail(toEmail: string, itemName: string) {
 }
 
 // 3. 마켓 승인/반려 알림 (유저에게 발송)
-export async function sendMarketApprovalEmail(toEmail: string, marketTitle: string, status: "active" | "cancelled", reason?: string) {
+export async function sendMarketApprovalEmail(toEmail: string, marketTitle: string, status: "active" | "cancelled", _reason?: string) {
   if (!resend) return { success: false };
   
   const isApproved = status === "active";
@@ -101,13 +101,10 @@ export async function sendAdminOrderNotification(params: {
   itemName: string;
   price: number;
   pointsUsed: number;
-  cardAmount: number;
-  paymentMethod: string;
   contactInfo: string;
   emailInfo?: string;
 }) {
   if (!resend) return { success: false };
-  const methodLabel = params.paymentMethod === "hybrid" ? `복합결제 (포인트 ${params.pointsUsed.toLocaleString()}P + 카드 ${params.cardAmount.toLocaleString()}원)` : params.paymentMethod === "card" ? `카드결제 ${params.cardAmount.toLocaleString()}원` : `포인트 ${params.pointsUsed.toLocaleString()}P`;
   try {
     await resend.emails.send({
       from: SENDER_EMAIL,
@@ -118,10 +115,9 @@ export async function sendAdminOrderNotification(params: {
           <h2 style="color: #6366f1;">새 상점 주문이 접수되었습니다 🛒</h2>
           <table style="width: 100%; border-collapse: collapse; margin-top: 16px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
             <tr style="background:#f9fafb"><td style="padding:12px 16px;font-weight:bold;color:#374151;border-bottom:1px solid #e5e7eb">상품명</td><td style="padding:12px 16px;border-bottom:1px solid #e5e7eb">${params.itemName}</td></tr>
-            <tr><td style="padding:12px 16px;font-weight:bold;color:#374151;border-bottom:1px solid #e5e7eb">총 금액</td><td style="padding:12px 16px;border-bottom:1px solid #e5e7eb">${params.price.toLocaleString()}원</td></tr>
-            <tr style="background:#f9fafb"><td style="padding:12px 16px;font-weight:bold;color:#374151;border-bottom:1px solid #e5e7eb">결제 방식</td><td style="padding:12px 16px;border-bottom:1px solid #e5e7eb">${methodLabel}</td></tr>
-            <tr><td style="padding:12px 16px;font-weight:bold;color:#374151;border-bottom:1px solid #e5e7eb">전화번호</td><td style="padding:12px 16px;border-bottom:1px solid #e5e7eb">${params.contactInfo}</td></tr>
-            <tr style="background:#f9fafb"><td style="padding:12px 16px;font-weight:bold;color:#374151">이메일</td><td style="padding:12px 16px">${params.emailInfo || "-"}</td></tr>
+            <tr><td style="padding:12px 16px;font-weight:bold;color:#374151;border-bottom:1px solid #e5e7eb">포인트</td><td style="padding:12px 16px;border-bottom:1px solid #e5e7eb">${params.pointsUsed.toLocaleString()}P</td></tr>
+            <tr style="background:#f9fafb"><td style="padding:12px 16px;font-weight:bold;color:#374151;border-bottom:1px solid #e5e7eb">전화번호</td><td style="padding:12px 16px;border-bottom:1px solid #e5e7eb">${params.contactInfo}</td></tr>
+            <tr><td style="padding:12px 16px;font-weight:bold;color:#374151">이메일</td><td style="padding:12px 16px">${params.emailInfo || "-"}</td></tr>
           </table>
           <br/>
           <a href="https://policat.kr/admin" style="display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;margin-top:10px">어드민에서 처리하기 →</a>
