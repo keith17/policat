@@ -146,7 +146,7 @@ export default function ShopPage() {
                       color: canBuy ? "white" : "var(--text-muted)", fontWeight: 700, fontSize: 13,
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     }}>
-                      <Coins size={14} /> {formatPoints(item.price)} 구매
+                      <Coins size={14} /> 교환하기
                     </div>
                   </div>
                 </motion.div>

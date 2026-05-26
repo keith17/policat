@@ -9,8 +9,10 @@ import { createClient } from "@/utils/supabase/client";
 
 export type FeaturedItem = {
   id: string;
+  slug?: string;
   type: 'event' | 'market';
   title: string;
+  shortTitle?: string;
   description?: string;
   categoryLabel?: string;
   emoji?: string;
@@ -129,7 +131,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
   const currentItem = items[currentIndex];
   
   const isEvent = currentItem.type === 'event';
-  const linkHref = isEvent ? `/event/${currentItem.id}` : `/?market=${currentItem.id}`; // Optional: scroll to market if market
+  const linkHref = isEvent ? `/event/${currentItem.slug || currentItem.id}` : `/market/${currentItem.slug || currentItem.id}`;
 
   return (
     <div style={{ position: "relative", width: "100%", overflow: "hidden", borderRadius: 16, marginBottom: 40, border: "1px solid var(--border)", background: "var(--bg-card)" }}>
@@ -153,7 +155,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
           </div>
           
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 900, color: "var(--text-primary)", marginBottom: 12, lineHeight: 1.3 }}>
-            {currentItem.title}
+            {currentItem.shortTitle || currentItem.title}
           </h2>
           
           {currentItem.description && (
@@ -184,7 +186,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <span style={{ width: 18, height: 18, borderRadius: "50%", background: color, color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800 }}>{i + 1}</span>
-                            <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>{m.title}</span>
+                            <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>{m.short_title || m.title}</span>
                           </div>
                           <span style={{ color: color, fontWeight: 900 }}>{m.yesProb}%</span>
                         </div>

@@ -5,6 +5,7 @@ import { formatPoints } from "@/lib/data";
 
 interface Market {
   id: string;
+  slug?: string;
   title: string;
   category: string;
   categoryLabel: string;
@@ -65,7 +66,7 @@ export default function MarketCard({ market, onBet, userPoints, index, userId }:
       </div>
 
       {/* Title */}
-      <Link href={`/market/${market.id}`} style={{ textDecoration: "none" }}>
+      <Link href={`/market/${market.slug || market.id}`} style={{ textDecoration: "none" }}>
         <h3 style={{
           fontSize: 16, fontWeight: 600, color: "var(--text-primary)",
           marginBottom: 16, lineHeight: 1.5,
@@ -196,7 +197,7 @@ export default function MarketCard({ market, onBet, userPoints, index, userId }:
         style={{ width: "100%", marginTop: 8, fontSize: 12, padding: "8px" }}
         onClick={() => {
           const refParam = userId ? `?ref=${userId}` : "";
-          const shareUrl = `https://policat.kr/market/${market.id}${refParam}`;
+          const shareUrl = `https://policat.kr/market/${market.slug || market.id}${refParam}`;
           const text = `폴리캣 마켓: "${market.title}"\nYES ${market.yesProb}% / NO ${market.noProb}%\n지금 예측하러 가보세요! 👉 ${shareUrl}`;
           if (navigator.share) {
             navigator.share({ title: "폴리캣 예측", text, url: shareUrl });

@@ -3,6 +3,7 @@ export const markets = [
   {
     id: "kospi-2700",
     title: "코스피가 이번 달 안에 2,700선을 돌파할까?",
+    short_title: "2,700선 돌파",
     category: "economy",
     categoryLabel: "경제",
     emoji: "📈",
@@ -22,6 +23,7 @@ export const markets = [
   {
     id: "usd-krw-1450",
     title: "달러/원 환율이 1,450원 이하로 내려올까?",
+    short_title: "1,450원 이하 하락",
     category: "economy",
     categoryLabel: "경제",
     emoji: "💵",
@@ -41,6 +43,7 @@ export const markets = [
   {
     id: "boi-rate-freeze",
     title: "한국은행, 5월 금통위에서 기준금리 동결할까?",
+    short_title: "기준금리 동결",
     category: "economy",
     categoryLabel: "경제",
     emoji: "🏦",
@@ -60,6 +63,7 @@ export const markets = [
   {
     id: "samsung-80k",
     title: "삼성전자 주가가 한 달 내 8만 원 회복할까?",
+    short_title: "8만전자 회복",
     category: "economy",
     categoryLabel: "경제",
     emoji: "📱",
@@ -79,6 +83,7 @@ export const markets = [
   {
     id: "opposition-win",
     title: "다음 대선에서 야권 단일 후보가 승리할까?",
+    short_title: "야권 단일 후보 승리",
     category: "politics",
     categoryLabel: "정치",
     emoji: "🗳️",
@@ -98,6 +103,7 @@ export const markets = [
   {
     id: "approval-40",
     title: "대통령 지지율이 이달 40%대를 유지할까?",
+    short_title: "지지율 40%대 유지",
     category: "politics",
     categoryLabel: "정치",
     emoji: "📊",
@@ -117,6 +123,7 @@ export const markets = [
   {
     id: "ko-apartments-rise",
     title: "서울 아파트 평균 매매가 올해 더 오를까?",
+    short_title: "아파트 매매가 상승",
     category: "economy",
     categoryLabel: "경제",
     emoji: "🏢",
@@ -136,6 +143,7 @@ export const markets = [
   {
     id: "kpop-chart-1",
     title: "BTS 신보, 빌보드 앨범 차트 1위 달성할까?",
+    short_title: "빌보드 1위 달성",
     category: "society",
     categoryLabel: "사회/트렌드",
     emoji: "🎵",
@@ -155,6 +163,7 @@ export const markets = [
   {
     id: "kdrama-rating-20",
     title: "올해 드라마 중 시청률 20%를 넘는 작품이 나올까?",
+    short_title: "시청률 20% 돌파",
     category: "society",
     categoryLabel: "사회/트렌드",
     emoji: "📺",
@@ -174,6 +183,7 @@ export const markets = [
   {
     id: "national-assembly-bill",
     title: "전국민 지원금 법안, 올해 국회 본회의 통과할까?",
+    short_title: "지원금 법안 통과",
     category: "politics",
     categoryLabel: "정치",
     emoji: "📜",

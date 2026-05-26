@@ -13,7 +13,7 @@ export default function Footer() {
             <div style={{ width: 28, height: 28 }}>
               <img src="/logo.svg" alt="Policat" width={28} height={28} />
             </div>
-            <span style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>POLICAT</span>
+            <span style={{ fontSize: 20, fontWeight: 800, fontFamily: "var(--font-montserrat)", color: "var(--text-primary)", letterSpacing: "-0.02em" }}>POLICAT</span>
           </Link>
           <p style={{ color: "var(--text-muted)", fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
             세상의 모든 이슈를 예측하고 즐기는<br />광고 기반 무료 예측 마켓 플랫폼

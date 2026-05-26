@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Montserrat } from "next/font/google";
 import Footer from "@/components/Footer";
 import "./globals.css";
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["700", "800", "900"],
+  variable: "--font-montserrat",
+});
 
 export const metadata: Metadata = {
   title: "폴리캣 | 경제·스포츠·연예 예측 마켓",
@@ -40,7 +47,7 @@ ChannelIO('boot',{"pluginKey":"9f4d4b97-4990-4df1-8879-ea583562aa60","hideChanne
           }}
         />
       </head>
-      <body style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <body className={`${montserrat.variable}`} style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           {children}
         </div>

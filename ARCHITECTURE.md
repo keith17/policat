@@ -92,6 +92,7 @@
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
 | id | uuid (PK) | - |
+| slug | text (UNIQUE) | SEO 친화적 URL 고유값 |
 | title | text | 마켓 제목 |
 | category | text | 카테고리 (economy, politics, society, sports, entertainment, tech, international) |
 | description | text | 마켓 상세 설명 |
@@ -109,6 +110,7 @@
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
 | id | uuid (PK) | - |
+| slug | text (UNIQUE) | SEO 친화적 URL 고유값 |
 | title | text | 이벤트 제목 |
 | description | text | 이벤트 설명 |
 | is_featured | boolean | 상단 캐로셀 노출 여부 |

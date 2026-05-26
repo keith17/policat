@@ -8,7 +8,8 @@ import MarketCard from "@/components/MarketCard";
 import EventCard from "@/components/EventCard";
 import FeaturedCarousel, { FeaturedItem } from "@/components/FeaturedCarousel";
 import InternalBannerCarousel from "@/components/InternalBannerCarousel";
-import { AdBanner, AdInFeed } from "@/components/AdBanner";
+import { AdBanner } from "@/components/AdBanner";
+import KakaoAdFit, { KakaoAdFitInFeed, KakaoAdFitBottom } from "@/components/KakaoAdFit";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/client";
 import { markets as initialMarkets, formatPoints, getTier, tierConfig } from "@/lib/data";
@@ -130,6 +131,7 @@ export default function Home() {
            
            return {
              id: m.id,
+             slug: m.slug,
              title: m.title,
              category: m.category,
              event_id: m.event_id,
@@ -178,7 +180,7 @@ export default function Home() {
           });
           setEvents(enrichedEvents);
           fItems = [...enrichedEvents.filter(e => e.is_featured).map(e => ({
-            id: e.id, type: 'event', title: e.title, description: e.description, emoji: '🎉', markets: e.markets
+            id: e.id, slug: e.slug, type: 'event', title: e.title, description: e.description, emoji: '🎉', markets: e.markets
           }))];
         } else setEvents([]);
         
@@ -190,7 +192,7 @@ export default function Home() {
             const yesProb = total > 0 ? Math.round((m.yes_pool / total) * 100) : 50;
             const noProb = total > 0 ? 100 - yesProb : 50;
             return {
-              id: m.id, type: 'market', title: m.title, description: m.description,
+              id: m.id, slug: m.slug, type: 'market', title: m.title, shortTitle: m.short_title, description: m.description,
               emoji: getCategoryEmoji(m.category),
               yesProb, noProb, totalVolume: total
             };
@@ -247,7 +249,7 @@ export default function Home() {
       m.id === betModal.marketId ? { ...m, myBet: betModal.side, myBetAmount: betAmount } : m
     ));
     setBetModal(null);
-    showToast(`🎯 예측 완료! ${betAmount}P 베팅`, "success");
+    showToast(`🎯 예측 완료! ${betAmount}P 사용`, "success");
 
     // Supabase Insert & Update
     await supabase.from("bets").insert({
@@ -267,6 +269,14 @@ export default function Home() {
       type: "bet",
       description: `예측 참여 (${betModal.side.toUpperCase()})`
     });
+
+    // Notify Slack
+    const marketName = markets.find(m => m.id === betModal.marketId)?.title || betModal.marketId;
+    fetch("/api/slack", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: `[PoliCat] 🎲 예측 참여 발생!\n- 마켓: ${marketName}\n- 선택: ${betModal.side.toUpperCase()}\n- 금액: ${betAmount}P` })
+    }).catch(console.error);
 
     // NOTE: Market pools should ideally be updated via a Postgres Trigger or Edge Function to bypass normal user RLS.
   };
@@ -322,9 +332,9 @@ export default function Home() {
         <InternalBannerCarousel claimDaily={claimDaily} dailyClaimed={dailyClaimed} />
       </section>
 
-      {/* Ad Banner */}
+      {/* Ad Banner (Kakao AdFit) */}
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px 20px" }}>
-        <AdBanner type="horizontal" />
+        <KakaoAdFit />
       </div>
 
       {/* Markets Section */}
@@ -383,8 +393,12 @@ export default function Home() {
               return (
                 <div key={`grid-item-${globalIndex}`} style={{ display: "contents" }}>
                   {showInFeed && (
-                    <div style={{ gridColumn: "1 / -1" }}>
-                      <AdInFeed />
+                    <div style={{ 
+                      display: "flex", justifyContent: "center", alignItems: "center", 
+                      background: "var(--bg-card)", border: "1px solid var(--border)", 
+                      borderRadius: 16, overflow: "hidden", minHeight: 280
+                    }}>
+                      <KakaoAdFitInFeed index={globalIndex / 6} />
                     </div>
                   )}
                   {item.type === "event" ? (
@@ -422,7 +436,7 @@ export default function Home() {
 
         {/* Bottom Ad */}
         <div style={{ marginTop: 32 }}>
-          <AdBanner type="horizontal" />
+          <KakaoAdFitBottom />
         </div>
       </section>
 
@@ -462,7 +476,7 @@ export default function Home() {
 
               <div style={{ marginBottom: 20 }}>
                 <label style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 8, display: "block" }}>
-                  베팅 포인트 (보유: {formatPoints(points)})
+                  참여 포인트 (보유: {formatPoints(points)})
                 </label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {[10, 50, 100, 200, 500].map(amt => (
@@ -490,7 +504,7 @@ export default function Home() {
                   border: "1px solid var(--border)"
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>베팅 금액</span>
+                    <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>사용 포인트</span>
                     <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{betAmount}P</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>

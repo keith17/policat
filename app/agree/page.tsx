@@ -25,7 +25,15 @@ function AgreeContent() {
   return (
     <TermsGate
       userId={userId}
-      onComplete={(agreed) => {
+      onComplete={async (agreed) => {
+        if (agreed) {
+          // Notify Slack
+          fetch("/api/slack", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: `[PoliCat] 🎉 새로운 유저가 가입했습니다! (ID: ${userId})` })
+          }).catch(console.error);
+        }
         router.replace(agreed ? next : "/");
       }}
     />

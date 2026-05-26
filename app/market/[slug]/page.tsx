@@ -12,7 +12,7 @@ import { createClient } from "@/utils/supabase/client";
 
 export default function MarketDetailPage() {
   const params = useParams();
-  const marketId = params.id as string;
+  const marketSlug = params.slug as string;
   const router = useRouter();
   
   const [market, setMarket] = useState<any>(null);
@@ -34,6 +34,20 @@ export default function MarketDetailPage() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
 
+      // Load market using slug or id
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(marketSlug);
+      const query = isUuid 
+        ? supabase.from("markets").select("*").eq("id", marketSlug).single()
+        : supabase.from("markets").select("*").eq("slug", marketSlug).single();
+      const { data: mData } = await query;
+      
+      if (!mData) {
+        setLoading(false);
+        return;
+      }
+
+      const realMarketId = mData.id;
+
       // Track share referral click
       const urlParams = new URLSearchParams(window.location.search);
       const refId = urlParams.get('ref');
@@ -41,7 +55,7 @@ export default function MarketDetailPage() {
         fetch('/api/share-click', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ referrerId: refId, marketId })
+          body: JSON.stringify({ referrerId: refId, marketId: realMarketId })
         }).catch(() => {});
       }
       
@@ -49,15 +63,11 @@ export default function MarketDetailPage() {
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
         setUserProfile(profile);
         
-        const { data: bets } = await supabase.from("bets").select("*").eq("user_id", user.id).eq("market_id", marketId);
+        const { data: bets } = await supabase.from("bets").select("*").eq("user_id", user.id).eq("market_id", realMarketId);
         if (bets && bets.length > 0) {
           setUserBets(bets);
         }
       }
-
-      // Load market
-      const { data: mData } = await supabase.from("markets").select("*").eq("id", marketId).single();
-      if (mData) {
         const total = mData.yes_pool + mData.no_pool;
         const yesProb = total > 0 ? Math.round((mData.yes_pool / total) * 100) : 50;
         const noProb = total > 0 ? 100 - yesProb : 50;
@@ -79,7 +89,7 @@ export default function MarketDetailPage() {
         });
 
         // Fetch ALL bets for trend graph
-        const { data: allBets } = await supabase.from("bets").select("*").eq("market_id", marketId).order("created_at", { ascending: true });
+        const { data: allBets } = await supabase.from("bets").select("*").eq("market_id", realMarketId).order("created_at", { ascending: true });
 
         if (allBets && allBets.length > 0) {
           const dailyData = new Map<string, any>();
@@ -112,11 +122,10 @@ export default function MarketDetailPage() {
 
           setTrendData(trend);
         }
-      }
       setLoading(false);
     }
     loadData();
-  }, [marketId, supabase]);
+  }, [marketSlug, supabase]);
 
   if (loading) {
     return <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }} />;
@@ -154,7 +163,7 @@ export default function MarketDetailPage() {
     // Insert DB records
     await supabase.from("bets").insert({
       user_id: user.id,
-      market_id: marketId,
+      market_id: market.id,
       side: betSide,
       amount: betAmount
     });
@@ -171,7 +180,7 @@ export default function MarketDetailPage() {
 
   const handleShare = () => {
     const refParam = user ? `?ref=${user.id}` : "";
-    const shareUrl = `https://policat.kr/market/${market.id}${refParam}`;
+    const shareUrl = `https://policat.kr/market/${market.slug}${refParam}`;
     const text = `[폴리캣] "${market.title}"\nYES ${market.yesProb}% / NO ${market.noProb}%\n지금 예측해보세요! 👉 ${shareUrl}\n#폴리캣 #예측마켓`;
     navigator.clipboard?.writeText(text);
     showToast("📋 공유 링크가 복사됐습니다!");
@@ -275,7 +284,7 @@ export default function MarketDetailPage() {
             </motion.div>
 
             {/* Comments */}
-            <CommentSection marketId={marketId} currentUser={user} />
+            <CommentSection marketId={market.id} currentUser={user} />
           </div>
 
           {/* Right Sidebar */}
@@ -312,7 +321,7 @@ export default function MarketDetailPage() {
               ) : market.status === "ended" ? (
                 <div style={{ textAlign: "center", padding: 24, background: "var(--bg-secondary)", borderRadius: 8, color: "var(--text-secondary)", fontWeight: 700 }}>
                   <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
-                  베팅이 마감되었습니다.<br/>결과 판정 대기중입니다.
+                  참여가 마감되었습니다.<br/>결과 판정 대기중입니다.
                   {userBets.length > 0 && (
                     <div style={{ marginTop: 12, fontSize: 13 }}>
                       내 참여: {userBets.length}건, 총 {userBets.reduce((s: number, b: any) => s + b.amount, 0)}P
@@ -370,7 +379,7 @@ export default function MarketDetailPage() {
                   </div>
 
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 8, fontWeight: 700 }}>베팅 포인트 설정</div>
+                    <div style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 8, fontWeight: 700 }}>참여 포인트 설정</div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {[10, 50, 100, 200, 500].map(amt => (
                         <button

@@ -119,9 +119,9 @@ export default function Navbar({ points, xp = points, streak }: NavbarProps) {
             <img src="/logo.svg" alt="Policat" width={32} height={32} />
           </div>
           <span style={{
-            fontSize: 24, fontWeight: 900,
+            fontSize: 24, fontWeight: 800,
             color: "var(--text-primary)", letterSpacing: "-0.02em",
-            fontFamily: "system-ui, -apple-system, sans-serif"
+            fontFamily: "var(--font-montserrat)"
           }}>POLICAT</span>
         </Link>
 

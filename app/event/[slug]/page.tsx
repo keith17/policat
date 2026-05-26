@@ -8,10 +8,11 @@ import TrendGraph, { TrendData } from "@/components/TrendGraph";
 import CommentSection from "@/components/CommentSection";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatPoints } from "@/lib/data";
+import Link from "next/link";
 
 export default function EventPage() {
   const params = useParams();
-  const id = params.id as string;
+  const eventSlug = params.slug as string;
   const [event, setEvent] = useState<any>(null);
   const [markets, setMarkets] = useState<any[]>([]);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
@@ -35,13 +36,22 @@ export default function EventPage() {
       }
 
       // Fetch Event
-      const { data: evt } = await supabase.from("events").select("*").eq("id", id).single();
-      if (evt) setEvent(evt);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventSlug);
+      const query = isUuid 
+        ? supabase.from("events").select("*").eq("id", eventSlug).single()
+        : supabase.from("events").select("*").eq("slug", eventSlug).single();
+      const { data: evt } = await query;
+      if (!evt) {
+        setLoading(false);
+        return;
+      }
+      setEvent(evt);
+      const realEventId = evt.id;
 
       // Fetch Markets
       const { data: mkts } = await supabase.from("markets")
         .select("*")
-        .eq("event_id", id)
+        .eq("event_id", realEventId)
         .in("status", ["active", "pending"])
         .order("created_at", { ascending: false });
 
@@ -125,7 +135,7 @@ export default function EventPage() {
       setLoading(false);
     }
     loadData();
-  }, [id, supabase]);
+  }, [eventSlug, supabase]);
 
   const showToast = (msg: string, type: "success" | "info" | "warn" = "success") => {
     setToast({ msg, type });
@@ -154,11 +164,19 @@ export default function EventPage() {
       m.id === betModal.marketId ? { ...m, myBet: betModal.side, myBetAmount: betAmount, [betModal.side + "_pool"]: m[betModal.side + "_pool"] + betAmount, yesProb: Math.round(( (m.yes_pool + (betModal.side === 'yes' ? betAmount : 0)) / (m.yes_pool + m.no_pool + betAmount) ) * 100) } : m
     ));
     setBetModal(null);
-    showToast(`🎯 예측 완료! ${betAmount}P 베팅`, "success");
+    showToast(`🎯 예측 완료! ${betAmount}P 사용`, "success");
 
     await supabase.from("bets").insert({ user_id: user.id, market_id: betModal.marketId, side: betModal.side, amount: betAmount });
     await supabase.from("profiles").update({ points: newPoints }).eq("id", user.id);
     await supabase.from("point_transactions").insert({ user_id: user.id, amount: -betAmount, type: "bet", description: `예측 참여 (${betModal.side.toUpperCase()})` });
+
+    // Notify Slack
+    const marketName = markets.find(m => m.id === betModal.marketId)?.title || betModal.marketId;
+    fetch("/api/slack", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: `[PoliCat] 🎲 예측 참여 발생!\n- 마켓: ${marketName}\n- 선택: ${betModal.side.toUpperCase()}\n- 금액: ${betAmount}P` })
+    }).catch(console.error);
   };
 
   // Define colors for candidate lines
@@ -213,7 +231,9 @@ export default function EventPage() {
                   {i + 1}
                 </div>
                 <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{m.title}</h3>
+                  <Link href={`/market/${m.slug || m.id}`} style={{ textDecoration: 'none' }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4, cursor: "pointer", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--accent)"} onMouseLeave={e => e.currentTarget.style.color = "var(--text-primary)"}>{m.title}</h3>
+                  </Link>
                   <div style={{ fontSize: 13, color: "var(--text-muted)" }}>총 {m.totalVolume.toLocaleString()}P 참여</div>
                 </div>
               </div>
@@ -245,7 +265,7 @@ export default function EventPage() {
         </div>
 
         {/* Comment Section */}
-        <CommentSection eventId={id} currentUser={user} />
+        <CommentSection eventId={event.id} currentUser={user} />
       </section>
 
       {/* Bet Modal */}
@@ -270,7 +290,7 @@ export default function EventPage() {
               </p>
 
               <div style={{ marginBottom: 20 }}>
-                <label style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 8, display: "block" }}>베팅 포인트 (보유: {formatPoints(points)})</label>
+                <label style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 8, display: "block" }}>참여 포인트 (보유: {formatPoints(points)})</label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {[10, 50, 100, 200, 500].map(amt => (
                     <button key={amt} onClick={() => setBetAmount(amt)} style={{ padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", background: betAmount === amt ? (betModal.side === "yes" ? "var(--accent-yes)" : "var(--accent-no)") : "var(--bg-card-hover)", color: betAmount === amt ? "white" : "var(--text-secondary)", border: betAmount === amt ? "none" : "1px solid var(--border)" }}>{amt}P</button>
@@ -278,7 +298,7 @@ export default function EventPage() {
                 </div>
 
                 <div style={{ marginTop: 16, padding: 16, borderRadius: 8, background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}><span style={{ color: "var(--text-secondary)", fontSize: 14 }}>베팅 금액</span><span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{betAmount}P</span></div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}><span style={{ color: "var(--text-secondary)", fontSize: 14 }}>사용 포인트</span><span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{betAmount}P</span></div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--text-secondary)", fontSize: 14 }}>예상 수익 (적중 시)</span><span style={{ color: "var(--accent-yes)", fontWeight: 700 }}>+{Math.round(betAmount * (betModal.side === "yes" ? (100 / (markets.find(m => m.id === betModal.marketId)?.yesProb || 50)) : (100 / (markets.find(m => m.id === betModal.marketId)?.noProb || 50))) - betAmount)}P</span></div>
                 </div>
               </div>

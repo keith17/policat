@@ -202,7 +202,7 @@ export default function ShopItemPage() {
               {paySuccess ? (
                 <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
                   <CheckCircle size={52} color="#22c55e" style={{ marginBottom: 12 }} />
-                  <h3 style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)", marginBottom: 8 }}>구매 완료!</h3>
+                  <h3 style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)", marginBottom: 8 }}>교환 완료!</h3>
                   <div style={{ fontSize: 13, color: "var(--text-muted)", background: "var(--surface-alt)", borderRadius: 10, padding: "14px 16px", marginBottom: 20, lineHeight: 1.8 }}>
                     📦 기프티콘은 입력하신 전화번호로 발송되며,<br />
                     평일 기준 <strong style={{ color: "var(--text-secondary)" }}>최대 1~2일 소요</strong>될 수 있습니다.
@@ -211,7 +211,7 @@ export default function ShopItemPage() {
                     onClick={() => router.push("/profile/me")}
                     style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: "var(--purple-primary)", color: "white", fontSize: 15, fontWeight: 800, cursor: "pointer" }}
                   >
-                    구매 내역 보기
+                    교환 내역 보기
                   </button>
                 </div>
 
@@ -219,7 +219,7 @@ export default function ShopItemPage() {
                 /* 비로그인: 로그인 유도 */
                 <div style={{ textAlign: "center", padding: "16px 0" }}>
                   <Coins size={36} color="var(--accent)" style={{ marginBottom: 12, opacity: 0.7 }} />
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>포인트로 구매하는 상품입니다</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>포인트로 교환하는 상품입니다</p>
                   <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 20, lineHeight: 1.6 }}>
                     예측 마켓에 참여해 포인트를 모으고<br />기프티콘으로 교환해 보세요!
                   </p>
@@ -307,7 +307,7 @@ export default function ShopItemPage() {
                     disabled={isProcessing}
                     style={{ width: "100%", padding: "16px", borderRadius: 12, border: "none", background: isProcessing ? "var(--surface-alt)" : "var(--accent)", color: isProcessing ? "var(--text-muted)" : "white", fontSize: 16, fontWeight: 800, cursor: isProcessing ? "not-allowed" : "pointer" }}
                   >
-                    {isProcessing ? "처리 중…" : `포인트 ${item.price.toLocaleString()}P로 구매`}
+                    {isProcessing ? "처리 중…" : `포인트 ${item.price.toLocaleString()}P로 교환`}
                   </motion.button>
                   <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 12 }}>
                     기프티콘은 입력하신 전화번호로 발송됩니다

@@ -24,9 +24,7 @@ export default function EventCard({ event, index }: { event: any, index: number 
         <span className="tag" style={{ background: "var(--accent-soft)", color: "var(--accent)", fontWeight: 700 }}>
           📊 이벤트
         </span>
-        {marketCount > 0 && (
-          <span className="tag">{marketCount}개 후보</span>
-        )}
+
         <span style={{
           marginLeft: "auto", color: "var(--text-muted)", fontSize: 12,
           display: "flex", alignItems: "center", gap: 4,
@@ -37,11 +35,11 @@ export default function EventCard({ event, index }: { event: any, index: number 
       </div>
 
       {/* Title */}
-      <Link href={`/event/${event.id}`} style={{ textDecoration: "none" }}>
+      <Link href={`/event/${event.slug || event.id}`} style={{ textDecoration: "none" }}>
         <h3
           style={{
             fontSize: 16, fontWeight: 600, color: "var(--text-primary)",
-            marginBottom: event.description ? 8 : 16, lineHeight: 1.5,
+            marginBottom: 16, lineHeight: 1.5,
             transition: "color 0.15s"
           }}
           onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
@@ -50,15 +48,6 @@ export default function EventCard({ event, index }: { event: any, index: number 
           {event.title}
         </h3>
       </Link>
-
-      {event.description && (
-        <p style={{
-          color: "var(--text-secondary)", fontSize: 13, marginBottom: 16, lineHeight: 1.5,
-          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"
-        }}>
-          {event.description}
-        </p>
-      )}
 
       {/* Candidate list */}
       {marketCount > 0 && (
@@ -75,11 +64,11 @@ export default function EventCard({ event, index }: { event: any, index: number 
                     fontFamily: "var(--font-mono)", minWidth: 14, textAlign: "right"
                   }}>{i + 1}</span>
                   <span style={{ color: "var(--text-primary)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {m.title}
+                    {m.short_title || m.title}
                   </span>
                 </div>
                 <span style={{
-                  color: "var(--accent-yes)", fontWeight: 700, fontSize: 14,
+                  color: i === 0 ? "var(--accent-yes)" : "var(--text-muted)", fontWeight: 700, fontSize: 14,
                   fontFamily: "var(--font-mono)", flexShrink: 0, marginLeft: 8
                 }}>{m.yesProb}%</span>
               </div>
@@ -88,7 +77,7 @@ export default function EventCard({ event, index }: { event: any, index: number 
                   initial={{ width: 0 }}
                   animate={{ width: `${m.yesProb}%` }}
                   transition={{ duration: 0.8, ease: "easeOut", delay: index * 0.06 + 0.3 }}
-                  style={{ height: "100%", background: "var(--accent-yes)", borderRadius: 2 }}
+                  style={{ height: "100%", background: i === 0 ? "var(--accent-yes)" : "var(--border)", borderRadius: 2 }}
                 />
               </div>
             </div>
@@ -109,10 +98,8 @@ export default function EventCard({ event, index }: { event: any, index: number 
         <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
           👥 {marketCount}개 마켓
         </span>
-        <Link href={`/event/${event.id}`} style={{ textDecoration: "none" }}>
-          <button className="btn-primary" style={{ padding: "7px 14px", fontSize: 13 }}>
-            자세히 보기 →
-          </button>
+        <Link href={`/event/${event.slug || event.id}`} style={{ textDecoration: "none", color: "var(--accent)", fontSize: 13, fontWeight: 700 }}>
+          자세히 보기 →
         </Link>
       </div>
     </motion.div>

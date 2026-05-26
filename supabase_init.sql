@@ -36,6 +36,7 @@ create trigger on_auth_user_created
 create table markets (
   id uuid default gen_random_uuid() primary key,
   title text not null,
+  short_title text,
   category text not null,
   created_by uuid references profiles(id) not null,
   yes_pool integer default 0 not null,

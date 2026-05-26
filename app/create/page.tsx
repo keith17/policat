@@ -10,6 +10,7 @@ import { sendMarketCreationEmail } from "@/app/actions/email";
 export default function CreateMarketPage() {
   const [formData, setFormData] = useState({
     title: "",
+    shortTitle: "",
     category: "economy",
     endDate: "",
     description: "",
@@ -41,6 +42,7 @@ export default function CreateMarketPage() {
     // We insert into markets table. Note: endDate and description might need schema update in DB.
     const { error } = await supabase.from("markets").insert({
       title: formData.title,
+      short_title: formData.shortTitle || null,
       category: formData.category,
       created_by: user.id,
       status: "pending",
@@ -126,6 +128,20 @@ export default function CreateMarketPage() {
                   placeholder="예) 다음 주 수요일에 비가 올까?"
                   value={formData.title}
                   onChange={e => setFormData({ ...formData, title: e.target.value })}
+                  style={{
+                    padding: "14px 16px", borderRadius: 10, border: "1px solid var(--border)",
+                    background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 15
+                  }}
+                />
+              </div>
+
+              {/* Short Title Input */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>단답형 요약 제목 (선택)</label>
+                <input 
+                  placeholder="예) 수요일 비 내림"
+                  value={formData.shortTitle}
+                  onChange={e => setFormData({ ...formData, shortTitle: e.target.value })}
                   style={{
                     padding: "14px 16px", borderRadius: 10, border: "1px solid var(--border)",
                     background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 15

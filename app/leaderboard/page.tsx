@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import { AdBanner } from "@/components/AdBanner";
+import { KakaoAdFitLeaderboard } from "@/components/KakaoAdFit";
 import { tierConfig, formatPoints, getTier } from "@/lib/data";
 import { createClient } from "@/utils/supabase/client";
 
@@ -73,7 +73,7 @@ export default function LeaderboardPage() {
         </motion.div>
 
         {/* Ad Banner */}
-        <AdBanner type="horizontal" />
+        <KakaoAdFitLeaderboard />
         <div style={{ marginBottom: 24 }} />
 
         {loading ? (
